@@ -1,0 +1,208 @@
+/* App - Custom CSS */
+
+/* HTMX loading indicator */
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator {
+    display: inline;
+}
+
+.htmx-request.htmx-indicator {
+    display: inline;
+}
+
+/* Loading spinner */
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Genotype formatting */
+.genotype {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+.genotype .gene {
+    font-style: italic;
+}
+
+.genotype .balancer {
+    color: #6b7280;
+}
+
+/* Tag badges */
+.tag-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Label preview */
+.label-preview {
+    border: 1px dashed #d1d5db;
+    padding: 0.5rem;
+    background-color: #fff;
+}
+
+/* Print styles for labels */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .print-area, .print-area * {
+        visibility: visible;
+    }
+
+    .print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+
+    @page {
+        size: auto;
+        margin: 0;
+    }
+}
+
+/* Data table styles */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+/* Stock card */
+.stock-card {
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.stock-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Form input focus states */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #3b82f6;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+    .mobile-full-width {
+        width: 100%;
+    }
+
+    .mobile-stack {
+        flex-direction: column;
+    }
+}
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 50;
+    transform: translateY(100%);
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* PWA install prompt */
+.pwa-install-prompt {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #1e3a8a;
+    color: white;
+    padding: 1rem;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 40;
+}
+
+.pwa-install-prompt.show {
+    display: flex;
+}
+
+/* Skeleton loading */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Cross status colors */
+.status-planned {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-in_progress {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-completed {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-failed {
+    background-color: #fee2e2;
+    color: #991b1b;
+}

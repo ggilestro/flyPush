@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-semibold text-gray-900">Incoming Requests</h1>
+    <p class="mt-1 text-sm text-gray-500">Manage stock requests from other labs</p>
+</div>
+
+<div x-data="incomingRequests()" x-init="loadRequests(); loadStats()">
+    <!-- Stats cards -->
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500">Pending</div>
+            <div class="mt-1 text-2xl font-semibold text-yellow-600" x-text="stats.incoming_pending || 0"></div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500">Approved</div>
+            <div class="mt-1 text-2xl font-semibold text-green-600" x-text="stats.incoming_approved || 0"></div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500">Fulfilled</div>
+            <div class="mt-1 text-2xl font-semibold text-blue-600" x-text="stats.incoming_fulfilled || 0"></div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500">Rejected</div>
+            <div class="mt-1 text-2xl font-semibold text-red-600" x-text="stats.incoming_rejected || 0"></div>
+        </div>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="mb-4 border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="filter = 'pending'"
+                    :class="filter === 'pending' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Pending
+            </button>
+            <button @click="filter = 'approved'"
+                    :class="filter === 'approved' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Approved
+            </button>
+            <button @click="filter = 'all'"
+                    :class="filter === 'all' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                All
+            </button>
+        </nav>
+    </div>
+
+    <!-- Loading state -->
+    <template x-if="loading">
+        <div class="animate-pulse bg-white shadow rounded-lg p-6">
+            <div class="space-y-3">
+                <div class="h-4 bg-gray-200 rounded"></div>
+                <div class="h-4 bg-gray-200 rounded"></div>
+                <div class="h-4 bg-gray-200 rounded"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Empty state -->
+    <template x-if="!loading && filteredRequests.length === 0">
+        <div class="bg-white shadow rounded-lg p-6 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">No requests</h3>
+            <p class="mt-1 text-sm text-gray-500">No incoming requests match the current filter.</p>
+        </div>
+    </template>
+
+    <!-- Requests list -->
+    <template x-if="!loading && filteredRequests.length > 0">
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requester</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
+                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="req in filteredRequests" :key="req.id">
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900" x-text="req.stock_id"></div>
+                                <div class="text-sm text-gray-500 max-w-md truncate" x-text="req.stock_genotype"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900" x-text="req.requester_name || 'Unknown'"></div>
+                                <div class="text-sm text-gray-500" x-text="req.requester_tenant_name || ''"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                      :class="{
+                                          'bg-yellow-100 text-yellow-800': req.status === 'pending',
+                                          'bg-green-100 text-green-800': req.status === 'approved',
+                                          'bg-blue-100 text-blue-800': req.status === 'fulfilled',
+                                          'bg-red-100 text-red-800': req.status === 'rejected',
+                                          'bg-gray-100 text-gray-800': req.status === 'cancelled'
+                                      }"
+                                      x-text="req.status"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(req.created_at)"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                <template x-if="req.message">
+                                    <button @click="showMessage(req)" class="text-gray-600 hover:text-gray-900">View Message</button>
+                                </template>
+                                <template x-if="req.status === 'pending'">
+                                    <span>
+                                        <button @click="openResponseModal(req, 'approve')" class="text-green-600 hover:text-green-900">Approve</button>
+                                        <button @click="openResponseModal(req, 'reject')" class="text-red-600 hover:text-red-900">Reject</button>
+                                    </span>
+                                </template>
+                                <template x-if="req.status === 'approved'">
+                                    <button @click="fulfillRequest(req.id)" class="text-blue-600 hover:text-blue-900">Mark Fulfilled</button>
+                                </template>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <!-- Response Modal -->
+    <div x-show="showResponseModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showResponseModal = false"></div>
+            <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4" x-text="responseAction === 'approve' ? 'Approve Request' : 'Reject Request'"></h3>
+                <template x-if="selectedRequest">
+                    <div>
+                        <div class="mb-4 p-3 bg-gray-50 rounded-md">
+                            <p class="text-sm font-medium text-gray-900" x-text="selectedRequest.stock_id"></p>
+                            <p class="text-sm text-gray-500" x-text="'Requested by: ' + (selectedRequest.requester_name || 'Unknown')"></p>
+                        </div>
+                        <template x-if="selectedRequest.message">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700">Their message:</label>
+                                <p class="mt-1 text-sm text-gray-600 italic" x-text="selectedRequest.message"></p>
+                            </div>
+                        </template>
+                        <form @submit.prevent="submitResponse()">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Your response (optional)</label>
+                                <textarea x-model="responseMessage" rows="3" placeholder="Add a note..."
+                                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border"></textarea>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" @click="showResponseModal = false"
+                                        class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    Cancel
+                                </button>
+                                <button type="submit" :disabled="submitting"
+                                        :class="responseAction === 'approve' ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'"
+                                        class="rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                                    <span x-show="!submitting" x-text="responseAction === 'approve' ? 'Approve' : 'Reject'"></span>
+                                    <span x-show="submitting">Processing...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div x-show="showMessageModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showMessageModal = false"></div>
+            <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Request Message</h3>
+                <template x-if="selectedRequest">
+                    <div>
+                        <p class="text-sm text-gray-600" x-text="selectedRequest.message"></p>
+                        <div class="mt-6 flex justify-end">
+                            <button @click="showMessageModal = false"
+                                    class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function incomingRequests() {
+    return {
+        loading: true,
+        requests: [],
+        stats: {},
+        filter: 'pending',
+        showResponseModal: false,
+        showMessageModal: false,
+        selectedRequest: null,
+        responseAction: '',
+        responseMessage: '',
+        submitting: false,
+
+        get filteredRequests() {
+            if (this.filter === 'all') return this.requests;
+            return this.requests.filter(r => r.status === this.filter);
+        },
+
+        async loadRequests() {
+            this.loading = true;
+            try {
+                const response = await fetch('/api/requests/incoming', { credentials: 'include' });
+                if (response.ok) {
+                    this.requests = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadStats() {
+            try {
+                const response = await fetch('/api/requests/stats', { credentials: 'include' });
+                if (response.ok) {
+                    this.stats = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        },
+
+        formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString();
+        },
+
+        showMessage(req) {
+            this.selectedRequest = req;
+            this.showMessageModal = true;
+        },
+
+        openResponseModal(req, action) {
+            this.selectedRequest = req;
+            this.responseAction = action;
+            this.responseMessage = '';
+            this.showResponseModal = true;
+        },
+
+        async submitResponse() {
+            this.submitting = true;
+            try {
+                const endpoint = this.responseAction === 'approve'
+                    ? `/api/requests/${this.selectedRequest.id}/approve`
+                    : `/api/requests/${this.selectedRequest.id}/reject`;
+
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        response_message: this.responseMessage || null
+                    })
+                });
+                if (response.ok) {
+                    this.showResponseModal = false;
+                    await this.loadRequests();
+                    await this.loadStats();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Failed to process request');
+                }
+            } catch (error) {
+                console.error('Error processing request:', error);
+            } finally {
+                this.submitting = false;
+            }
+        },
+
+        async fulfillRequest(requestId) {
+            if (!confirm('Mark this request as fulfilled?')) return;
+            try {
+                const response = await fetch(`/api/requests/${requestId}/fulfill`, {
+                    method: 'PUT',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    await this.loadRequests();
+                    await this.loadStats();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Failed to fulfill request');
+                }
+            } catch (error) {
+                console.error('Error fulfilling request:', error);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

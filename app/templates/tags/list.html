@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div x-data="tagsManager()" x-init="loadTags()">
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900">Tags</h1>
+                <p class="mt-1 text-sm text-gray-600">Manage tags to categorize and organize your stocks</p>
+            </div>
+            <button @click="showCreateModal = true"
+                    class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New Tag
+            </button>
+        </div>
+    </div>
+    <!-- Loading State -->
+    <div x-show="loading" class="flex justify-center py-12">
+        <svg class="animate-spin h-8 w-8 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="!loading && tags.length === 0" class="text-center py-12 bg-white rounded-lg shadow">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No tags</h3>
+        <p class="mt-1 text-sm text-gray-500">Get started by creating a new tag.</p>
+        <div class="mt-6">
+            <button @click="showCreateModal = true"
+                    class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New Tag
+            </button>
+        </div>
+    </div>
+
+    <!-- Tags Grid -->
+    <div x-show="!loading && tags.length > 0" class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stocks</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <template x-for="tag in tags" :key="tag.id">
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium"
+                                      :style="{ backgroundColor: tag.color ? tag.color + '20' : '#e5e7eb', color: tag.color || '#374151' }">
+                                    <span class="w-2 h-2 rounded-full mr-1.5" :style="{ backgroundColor: tag.color || '#9ca3af' }"></span>
+                                    <span x-text="tag.name"></span>
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a :href="'/stocks?tag=' + encodeURIComponent(tag.name)"
+                               class="text-sm text-primary-600 hover:text-primary-500">
+                                <span x-text="tag.stock_count"></span> stocks
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button @click="editTag(tag)"
+                                    class="text-primary-600 hover:text-primary-900 mr-3">
+                                Edit
+                            </button>
+                            <button @click="confirmMerge(tag)"
+                                    class="text-yellow-600 hover:text-yellow-900 mr-3"
+                                    x-show="tags.length > 1">
+                                Merge
+                            </button>
+                            <button @click="confirmDelete(tag)"
+                                    class="text-red-600 hover:text-red-900">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div x-show="showCreateModal || showEditModal"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="closeModals()"></div>
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                <form @submit.prevent="showEditModal ? updateTag() : createTag()">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="showEditModal ? 'Edit Tag' : 'Create Tag'"></h3>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Name</label>
+                                <input type="text" x-model="formData.name" required
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                       placeholder="e.g., GAL4, screening, driver">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Color (optional)</label>
+                                <div class="mt-1 flex items-center space-x-3">
+                                    <input type="color" x-model="formData.color"
+                                           class="h-10 w-14 rounded border border-gray-300 cursor-pointer">
+                                    <input type="text" x-model="formData.color"
+                                           class="block w-28 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+                                           placeholder="#3b82f6"
+                                           pattern="^#[0-9A-Fa-f]{6}$">
+                                    <button type="button" @click="formData.color = ''"
+                                            class="text-sm text-gray-500 hover:text-gray-700">
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Preview -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Preview</label>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium"
+                                      :style="{ backgroundColor: formData.color ? formData.color + '20' : '#e5e7eb', color: formData.color || '#374151' }">
+                                    <span class="w-2 h-2 rounded-full mr-1.5" :style="{ backgroundColor: formData.color || '#9ca3af' }"></span>
+                                    <span x-text="formData.name || 'Tag name'"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="submit" :disabled="saving"
+                                class="inline-flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 sm:ml-3 sm:w-auto disabled:opacity-50">
+                            <span x-show="saving" class="mr-2">
+                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </span>
+                            <span x-text="showEditModal ? 'Save Changes' : 'Create Tag'"></span>
+                        </button>
+                        <button type="button" @click="closeModals()"
+                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showDeleteModal = false"></div>
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-lg font-semibold text-gray-900">Delete Tag</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500">
+                                    Are you sure you want to delete "<span class="font-medium" x-text="selectedTag?.name"></span>"?
+                                    <span x-show="selectedTag?.stock_count > 0">
+                                        This tag is used by <span class="font-medium" x-text="selectedTag?.stock_count"></span> stocks.
+                                    </span>
+                                    This action cannot be undone.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" @click="deleteTag()" :disabled="saving"
+                            class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto disabled:opacity-50">
+                        Delete
+                    </button>
+                    <button type="button" @click="showDeleteModal = false"
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Merge Modal -->
+    <div x-show="showMergeModal"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showMergeModal = false"></div>
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Merge Tag</h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Merge "<span class="font-medium" x-text="selectedTag?.name"></span>" into another tag.
+                        All stocks with this tag will be assigned the target tag instead.
+                    </p>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Merge into</label>
+                        <select x-model="mergeTargetId"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <option value="">Select a tag...</option>
+                            <template x-for="tag in tags.filter(t => t.id !== selectedTag?.id)" :key="tag.id">
+                                <option :value="tag.id" x-text="tag.name + ' (' + tag.stock_count + ' stocks)'"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" @click="mergeTag()" :disabled="saving || !mergeTargetId"
+                            class="inline-flex w-full justify-center rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500 sm:ml-3 sm:w-auto disabled:opacity-50">
+                        Merge
+                    </button>
+                    <button type="button" @click="showMergeModal = false"
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Toast -->
+    <div x-show="message"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         class="fixed bottom-4 right-4 z-50"
+         style="display: none;">
+        <div class="rounded-md p-4 shadow-lg"
+             :class="messageType === 'error' ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'">
+            <div class="flex items-center">
+                <svg x-show="messageType === 'success'" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <svg x-show="messageType === 'error'" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span x-text="message"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function tagsManager() {
+    return {
+        tags: [],
+        loading: true,
+        saving: false,
+        showCreateModal: false,
+        showEditModal: false,
+        showDeleteModal: false,
+        showMergeModal: false,
+        selectedTag: null,
+        mergeTargetId: '',
+        formData: {
+            name: '',
+            color: '',
+        },
+        message: '',
+        messageType: 'success',
+
+        async loadTags() {
+            this.loading = true;
+            try {
+                const response = await fetch('/api/tags', {
+                    credentials: 'include',
+                });
+                if (response.ok) {
+                    this.tags = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading tags:', error);
+                this.showMessage('Failed to load tags', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async createTag() {
+            this.saving = true;
+            try {
+                const response = await fetch('/api/tags', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        name: this.formData.name,
+                        color: this.formData.color || null,
+                    }),
+                });
+
+                if (response.ok) {
+                    this.showMessage('Tag created successfully', 'success');
+                    this.closeModals();
+                    await this.loadTags();
+                } else {
+                    const data = await response.json();
+                    this.showMessage(data.detail || 'Failed to create tag', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating tag:', error);
+                this.showMessage('Failed to create tag', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        editTag(tag) {
+            this.selectedTag = tag;
+            this.formData = {
+                name: tag.name,
+                color: tag.color || '',
+            };
+            this.showEditModal = true;
+        },
+
+        async updateTag() {
+            this.saving = true;
+            try {
+                const response = await fetch(`/api/tags/${this.selectedTag.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        name: this.formData.name,
+                        color: this.formData.color || null,
+                    }),
+                });
+
+                if (response.ok) {
+                    this.showMessage('Tag updated successfully', 'success');
+                    this.closeModals();
+                    await this.loadTags();
+                } else {
+                    const data = await response.json();
+                    this.showMessage(data.detail || 'Failed to update tag', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating tag:', error);
+                this.showMessage('Failed to update tag', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        confirmDelete(tag) {
+            this.selectedTag = tag;
+            this.showDeleteModal = true;
+        },
+
+        async deleteTag() {
+            this.saving = true;
+            try {
+                const response = await fetch(`/api/tags/${this.selectedTag.id}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    this.showMessage('Tag deleted successfully', 'success');
+                    this.showDeleteModal = false;
+                    await this.loadTags();
+                } else {
+                    const data = await response.json();
+                    this.showMessage(data.detail || 'Failed to delete tag', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting tag:', error);
+                this.showMessage('Failed to delete tag', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        confirmMerge(tag) {
+            this.selectedTag = tag;
+            this.mergeTargetId = '';
+            this.showMergeModal = true;
+        },
+
+        async mergeTag() {
+            if (!this.mergeTargetId) return;
+
+            this.saving = true;
+            try {
+                const response = await fetch(`/api/tags/${this.selectedTag.id}/merge/${this.mergeTargetId}`, {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    this.showMessage('Tags merged successfully', 'success');
+                    this.showMergeModal = false;
+                    await this.loadTags();
+                } else {
+                    const data = await response.json();
+                    this.showMessage(data.detail || 'Failed to merge tags', 'error');
+                }
+            } catch (error) {
+                console.error('Error merging tags:', error);
+                this.showMessage('Failed to merge tags', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        closeModals() {
+            this.showCreateModal = false;
+            this.showEditModal = false;
+            this.selectedTag = null;
+            this.formData = { name: '', color: '' };
+        },
+
+        showMessage(msg, type = 'success') {
+            this.message = msg;
+            this.messageType = type;
+            setTimeout(() => {
+                this.message = '';
+            }, 3000);
+        },
+    };
+}
+</script>
+{% endblock %}

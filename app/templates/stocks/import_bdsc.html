@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2">
+            <li><a href="/stocks" class="text-gray-500 hover:text-gray-700">Stocks</a></li>
+            <li class="flex items-center">
+                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span class="ml-2 text-gray-900 font-medium">Import from FlyBase</span>
+            </li>
+        </ol>
+    </nav>
+    <h1 class="mt-4 text-2xl font-semibold text-gray-900">Import from FlyBase Stock Database</h1>
+    <p class="mt-1 text-sm text-gray-500">Search and import stocks from BDSC, VDRC, Kyoto, NIG-Fly, KDRC, FlyORF, and NDSSC</p>
+</div>
+
+<div id="import-message"></div>
+
+<div x-data="flybaseImport()" x-init="loadStats()">
+    <!-- Search Section -->
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Search FlyBase Stocks</h2>
+
+        <!-- Repository Stats -->
+        <div x-show="stats" class="mb-4">
+            <div class="p-3 bg-blue-50 rounded-md text-sm text-blue-700 mb-3">
+                <span x-text="stats?.total_stocks?.toLocaleString()"></span> stocks available
+                <span x-show="stats?.data_version">(data version: <span x-text="stats?.data_version"></span>)</span>
+            </div>
+
+            <!-- Repository Filter Pills -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button @click="selectedRepository = null"
+                        :class="selectedRepository === null ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                        class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors">
+                    All
+                    <span class="ml-1 text-xs opacity-75" x-text="'(' + (stats?.total_stocks?.toLocaleString() || 0) + ')'"></span>
+                </button>
+                <template x-for="repo in stats?.repositories || []" :key="repo.id">
+                    <button @click="selectedRepository = repo.id"
+                            :class="selectedRepository === repo.id ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                            class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors">
+                        <span x-text="repo.name"></span>
+                        <span class="ml-1 text-xs opacity-75" x-text="'(' + repo.count.toLocaleString() + ')'"></span>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <form @submit.prevent="search()" class="flex gap-4">
+            <div class="flex-1">
+                <input type="text"
+                       x-model="query"
+                       :placeholder="selectedRepository ? `Search ${getRepositoryName(selectedRepository)} stocks...` : 'Enter stock number or genotype text...'"
+                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border"
+                       @keydown.enter.prevent="search()">
+            </div>
+            <button type="submit"
+                    :disabled="!query.trim() || searching"
+                    class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span x-show="searching" class="mr-2">
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </span>
+                <span x-text="searching ? 'Searching...' : 'Search'"></span>
+            </button>
+        </form>
+
+        <p class="mt-2 text-xs text-gray-500">
+            <span x-show="selectedRepository">
+                Searching in <span class="font-medium" x-text="getRepositoryName(selectedRepository)"></span> only.
+            </span>
+            <span x-show="!selectedRepository">
+                Search by stock number for exact matches, or enter genotype text to search within genotypes across all repositories.
+            </span>
+        </p>
+    </div>
+
+    <!-- Results Section -->
+    <template x-if="results !== null">
+        <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-medium text-gray-900">
+                    Search Results
+                    <span class="text-sm font-normal text-gray-500" x-text="'(' + results.length + ' found)'"></span>
+                </h2>
+                <div x-show="selected.length > 0" class="flex items-center gap-4">
+                    <span class="text-sm text-gray-500"><span x-text="selected.length"></span> selected</span>
+                    <button @click="importSelected()"
+                            :disabled="importing"
+                            class="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-green-500 disabled:opacity-50">
+                        <span x-show="importing" class="mr-2">
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                        Import Selected
+                    </button>
+                </div>
+            </div>
+
+            <template x-if="results.length === 0">
+                <div class="px-6 py-12 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No stocks found</h3>
+                    <p class="mt-1 text-sm text-gray-500">Try a different search term or repository filter.</p>
+                </div>
+            </template>
+
+            <template x-if="results.length > 0">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left">
+                                    <input type="checkbox"
+                                           class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                           @change="toggleSelectAll($event)"
+                                           :checked="selected.length === results.length && results.length > 0">
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repository</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock #</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Genotype</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Links</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="stock in results" :key="stock.external_id + '-' + stock.source">
+                                <tr class="hover:bg-gray-50" :class="{ 'bg-primary-50': isSelected(stock) }">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <input type="checkbox"
+                                               class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                               :checked="isSelected(stock)"
+                                               @change="toggleSelect(stock)">
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                                              :class="getRepositoryBadgeClass(stock.source)">
+                                            <span x-text="stock.source.toUpperCase()"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="text-sm font-medium text-gray-900" x-text="stock.external_id"></span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="text-sm text-gray-900 max-w-lg" x-text="stock.genotype"></div>
+                                        <div x-show="stock.metadata?.species" class="text-xs text-gray-500 mt-1">
+                                            Species: <span x-text="stock.metadata?.species"></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                        <a x-show="stock.metadata?.flybase_url"
+                                           :href="stock.metadata?.flybase_url"
+                                           target="_blank"
+                                           class="text-primary-600 hover:text-primary-900 mr-3">
+                                            FlyBase
+                                        </a>
+                                        <a x-show="stock.metadata?.repository_url"
+                                           :href="stock.metadata?.repository_url"
+                                           target="_blank"
+                                           class="text-primary-600 hover:text-primary-900">
+                                            <span x-text="stock.source.toUpperCase()"></span>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- Import Results -->
+    <template x-if="importResult !== null">
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Import Results</h3>
+            <div class="bg-gray-50 rounded-md p-4">
+                <dl class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Imported</dt>
+                        <dd class="mt-1 text-2xl font-semibold text-green-600" x-text="importResult?.imported || 0"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Skipped</dt>
+                        <dd class="mt-1 text-2xl font-semibold text-yellow-600" x-text="importResult?.skipped || 0"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Errors</dt>
+                        <dd class="mt-1 text-2xl font-semibold text-red-600" x-text="importResult?.errors?.length || 0"></dd>
+                    </div>
+                </dl>
+
+                <div x-show="importResult?.errors?.length > 0" class="mt-4">
+                    <h4 class="text-sm font-medium text-red-800 mb-2">Errors:</h4>
+                    <ul class="text-sm text-red-600 list-disc list-inside">
+                        <template x-for="error in importResult?.errors || []" :key="error">
+                            <li x-text="error"></li>
+                        </template>
+                    </ul>
+                </div>
+
+                <div x-show="importResult?.imported > 0" class="mt-4 text-center">
+                    <a href="/stocks" class="text-primary-600 hover:text-primary-900 font-medium">View Stocks</a>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<!-- Info Section -->
+<div class="mt-6 bg-white shadow rounded-lg p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">About FlyBase Stock Import</h2>
+    <div class="prose prose-sm text-gray-600">
+        <p>
+            This feature allows you to search and import stocks from multiple Drosophila stock centers
+            via the <a href="https://flybase.org/" target="_blank" class="text-primary-600 hover:text-primary-900">FlyBase</a>
+            stock database.
+        </p>
+        <h3 class="text-sm font-medium text-gray-900 mt-4 mb-2">Available Stock Centers:</h3>
+        <ul class="list-disc list-inside space-y-1">
+            <li><strong>BDSC</strong> - <a href="https://bdsc.indiana.edu/" target="_blank" class="text-primary-600 hover:text-primary-900">Bloomington Drosophila Stock Center</a></li>
+            <li><strong>VDRC</strong> - <a href="https://stockcenter.vdrc.at/" target="_blank" class="text-primary-600 hover:text-primary-900">Vienna Drosophila Resource Center</a></li>
+            <li><strong>Kyoto</strong> - <a href="https://kyotofly.kit.jp/" target="_blank" class="text-primary-600 hover:text-primary-900">Kyoto Stock Center</a></li>
+            <li><strong>NIG-Fly</strong> - <a href="https://shigen.nig.ac.jp/fly/nigfly/" target="_blank" class="text-primary-600 hover:text-primary-900">NIG-Fly Stock Center</a></li>
+            <li><strong>KDRC</strong> - <a href="https://kdrc.cnu.ac.kr/" target="_blank" class="text-primary-600 hover:text-primary-900">Korean Drosophila Resource Center</a></li>
+            <li><strong>FlyORF</strong> - <a href="https://www.flyorf.ch/" target="_blank" class="text-primary-600 hover:text-primary-900">FlyORF</a></li>
+            <li><strong>NDSSC</strong> - <a href="https://www.drosophila-speciesstock.com/" target="_blank" class="text-primary-600 hover:text-primary-900">National Drosophila Species Stock Center</a></li>
+        </ul>
+        <h3 class="text-sm font-medium text-gray-900 mt-4 mb-2">What gets imported:</h3>
+        <ul class="list-disc list-inside space-y-1">
+            <li>Stock ID: "{REPOSITORY}-{stock_number}" (e.g., BDSC-80563, VDRC-10004)</li>
+            <li>Genotype from FlyBase</li>
+            <li>Repository information</li>
+            <li>Links to FlyBase and original stock center pages (stored in metadata)</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+function flybaseImport() {
+    return {
+        query: '',
+        searching: false,
+        results: null,
+        selected: [],
+        importing: false,
+        importResult: null,
+        stats: null,
+        selectedRepository: null,
+
+        repositoryNames: {
+            'bdsc': 'Bloomington (BDSC)',
+            'vdrc': 'Vienna (VDRC)',
+            'kyoto': 'Kyoto',
+            'nig': 'NIG-Fly',
+            'kdrc': 'KDRC',
+            'flyorf': 'FlyORF',
+            'ndssc': 'NDSSC'
+        },
+
+        getRepositoryName(repoId) {
+            return this.repositoryNames[repoId] || repoId.toUpperCase();
+        },
+
+        getRepositoryBadgeClass(source) {
+            const colors = {
+                'bdsc': 'bg-blue-100 text-blue-800',
+                'vdrc': 'bg-purple-100 text-purple-800',
+                'kyoto': 'bg-green-100 text-green-800',
+                'nig': 'bg-yellow-100 text-yellow-800',
+                'kdrc': 'bg-red-100 text-red-800',
+                'flyorf': 'bg-indigo-100 text-indigo-800',
+                'ndssc': 'bg-pink-100 text-pink-800'
+            };
+            return colors[source] || 'bg-gray-100 text-gray-800';
+        },
+
+        async loadStats() {
+            try {
+                const response = await fetch('/api/plugins/sources/flybase/stats', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    this.stats = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        },
+
+        async search() {
+            if (!this.query.trim()) return;
+
+            this.searching = true;
+            this.results = null;
+            this.selected = [];
+            this.importResult = null;
+
+            try {
+                const params = new URLSearchParams({
+                    query: this.query.trim(),
+                    source: 'flybase',
+                    limit: '50'
+                });
+
+                if (this.selectedRepository) {
+                    params.set('repository', this.selectedRepository);
+                }
+
+                const response = await fetch('/api/plugins/search?' + params.toString(), {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    this.results = await response.json();
+                } else {
+                    const error = await response.json();
+                    document.getElementById('import-message').innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${error.detail || 'Search failed'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                document.getElementById('import-message').innerHTML = `
+                    <div class="mb-4 rounded-md bg-red-50 p-4">
+                        <p class="text-sm text-red-700">An error occurred during search.</p>
+                    </div>`;
+            } finally {
+                this.searching = false;
+            }
+        },
+
+        getStockKey(stock) {
+            return `${stock.source}:${stock.external_id}`;
+        },
+
+        isSelected(stock) {
+            const key = this.getStockKey(stock);
+            return this.selected.some(s => this.getStockKey(s) === key);
+        },
+
+        toggleSelect(stock) {
+            const key = this.getStockKey(stock);
+            const idx = this.selected.findIndex(s => this.getStockKey(s) === key);
+            if (idx === -1) {
+                this.selected.push(stock);
+            } else {
+                this.selected.splice(idx, 1);
+            }
+        },
+
+        toggleSelectAll(event) {
+            if (event.target.checked) {
+                this.selected = [...this.results];
+            } else {
+                this.selected = [];
+            }
+        },
+
+        async importSelected() {
+            if (this.selected.length === 0) return;
+
+            this.importing = true;
+            this.importResult = null;
+
+            try {
+                const stocks = this.selected.map(stock => ({
+                    external_id: stock.external_id,
+                    source: stock.source  // Use the repository as source
+                }));
+
+                const response = await fetch('/api/plugins/import', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ stocks })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    this.importResult = result;
+                    // Clear selection for successfully imported stocks
+                    if (result.imported > 0) {
+                        this.selected = [];
+                        document.getElementById('import-message').innerHTML = `
+                            <div class="mb-4 rounded-md bg-green-50 p-4">
+                                <p class="text-sm text-green-700">Successfully imported ${result.imported} stock(s)!</p>
+                            </div>`;
+                    }
+                } else {
+                    document.getElementById('import-message').innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${result.detail || 'Import failed'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Import error:', error);
+                document.getElementById('import-message').innerHTML = `
+                    <div class="mb-4 rounded-md bg-red-50 p-4">
+                        <p class="text-sm text-red-700">An error occurred during import.</p>
+                    </div>`;
+            } finally {
+                this.importing = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

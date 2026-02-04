@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-semibold text-gray-900">Stock Exchange</h1>
+    <p class="mt-1 text-sm text-gray-500">Browse and request stocks from other labs</p>
+</div>
+
+<div x-data="stockExchange()" x-init="loadStocks()">
+    <!-- Search and filters -->
+    <div class="mb-6 bg-white shadow rounded-lg p-4">
+        <form class="flex gap-4" @submit.prevent="search()">
+            <div class="flex-1">
+                <input type="text" x-model="query" placeholder="Search by stock ID or genotype..."
+                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+            </div>
+            <div>
+                <select x-model="scope" @change="loadStocks()"
+                        class="block rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                    <option value="public">Public Stocks</option>
+                    <option value="organization">Organization</option>
+                </select>
+            </div>
+            <button type="submit" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                Search
+            </button>
+        </form>
+    </div>
+
+    <!-- Loading state -->
+    <template x-if="loading">
+        <div class="animate-pulse bg-white shadow rounded-lg p-6">
+            <div class="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div class="space-y-3">
+                <div class="h-4 bg-gray-200 rounded"></div>
+                <div class="h-4 bg-gray-200 rounded"></div>
+                <div class="h-4 bg-gray-200 rounded"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Empty state -->
+    <template x-if="!loading && stocks.length === 0">
+        <div class="bg-white shadow rounded-lg p-6 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">No stocks found</h3>
+            <p class="mt-1 text-sm text-gray-500">Try adjusting your search or scope filters.</p>
+        </div>
+    </template>
+
+    <!-- Stocks list -->
+    <template x-if="!loading && stocks.length > 0">
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock ID</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Genotype</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lab</th>
+                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="stock in stocks" :key="stock.id">
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm font-medium text-gray-900" x-text="stock.stock_id"></span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900 max-w-md truncate" x-text="stock.genotype"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="stock.source || '-'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="stock.tenant_name || 'Unknown'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button @click="openRequestModal(stock)"
+                                        class="text-primary-600 hover:text-primary-900"
+                                        :disabled="stock.is_own"
+                                        :class="{ 'opacity-50 cursor-not-allowed': stock.is_own }">
+                                    <span x-text="stock.is_own ? 'Own Stock' : 'Request'"></span>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" x-show="total > pageSize">
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700">
+                            Showing <span class="font-medium" x-text="(page - 1) * pageSize + 1"></span> to <span class="font-medium" x-text="Math.min(page * pageSize, total)"></span> of <span class="font-medium" x-text="total"></span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                            <button @click="prevPage()" :disabled="page === 1" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                            </button>
+                            <button @click="nextPage()" :disabled="page * pageSize >= total" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Request Modal -->
+    <div x-show="showRequestModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showRequestModal = false"></div>
+            <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Request Stock</h3>
+                <template x-if="selectedStock">
+                    <div>
+                        <div class="mb-4 p-3 bg-gray-50 rounded-md">
+                            <p class="text-sm font-medium text-gray-900" x-text="selectedStock.stock_id"></p>
+                            <p class="text-sm text-gray-500 truncate" x-text="selectedStock.genotype"></p>
+                        </div>
+                        <form @submit.prevent="submitRequest()">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Message (optional)</label>
+                                <textarea x-model="requestMessage" rows="3" placeholder="Add a note to your request..."
+                                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border"></textarea>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" @click="showRequestModal = false"
+                                        class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    Cancel
+                                </button>
+                                <button type="submit" :disabled="submitting"
+                                        class="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50">
+                                    <span x-show="!submitting">Send Request</span>
+                                    <span x-show="submitting">Sending...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success notification -->
+    <div x-show="showSuccess" x-transition class="fixed bottom-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg">
+        <div class="flex items-center">
+            <svg class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <p class="ml-3 text-sm font-medium text-green-800">Request sent successfully!</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function stockExchange() {
+    return {
+        loading: true,
+        stocks: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        query: '',
+        scope: 'public',
+        showRequestModal: false,
+        selectedStock: null,
+        requestMessage: '',
+        submitting: false,
+        showSuccess: false,
+
+        async loadStocks() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams({
+                    page: this.page,
+                    page_size: this.pageSize,
+                    scope: this.scope
+                });
+                if (this.query) params.append('query', this.query);
+
+                const response = await fetch('/api/stocks?' + params.toString(), { credentials: 'include' });
+                if (response.ok) {
+                    const data = await response.json();
+                    this.stocks = data.items || [];
+                    this.total = data.total || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stocks:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        search() {
+            this.page = 1;
+            this.loadStocks();
+        },
+
+        prevPage() {
+            if (this.page > 1) {
+                this.page--;
+                this.loadStocks();
+            }
+        },
+
+        nextPage() {
+            if (this.page * this.pageSize < this.total) {
+                this.page++;
+                this.loadStocks();
+            }
+        },
+
+        openRequestModal(stock) {
+            if (stock.is_own) return;
+            this.selectedStock = stock;
+            this.requestMessage = '';
+            this.showRequestModal = true;
+        },
+
+        async submitRequest() {
+            this.submitting = true;
+            try {
+                const response = await fetch('/api/requests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        stock_id: this.selectedStock.id,
+                        message: this.requestMessage || null
+                    })
+                });
+                if (response.ok) {
+                    this.showRequestModal = false;
+                    this.showSuccess = true;
+                    setTimeout(() => this.showSuccess = false, 3000);
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Failed to send request');
+                }
+            } catch (error) {
+                console.error('Error sending request:', error);
+                alert('Failed to send request');
+            } finally {
+                this.submitting = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

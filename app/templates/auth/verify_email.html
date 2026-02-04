@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block public_content %}
+<div class="w-full max-w-md" x-data="emailVerification('{{ token or '' }}')">
+    <div class="mb-8">
+        <h1 class="text-center text-3xl font-bold tracking-tight text-primary-600">{{ app_name }}</h1>
+        <h2 class="mt-4 text-center text-2xl font-bold tracking-tight text-gray-900">Email Verification</h2>
+    </div>
+
+    <div class="bg-white shadow rounded-lg p-6">
+        <!-- Loading state -->
+        <div x-show="loading" class="text-center py-8">
+            <svg class="animate-spin h-10 w-10 text-primary-600 mx-auto" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-gray-600">Verifying your email...</p>
+        </div>
+
+        <!-- Success state -->
+        <div x-show="!loading && success" class="text-center py-6">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
+                <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">Email Verified!</h3>
+            <p class="mt-2 text-gray-600" x-text="message"></p>
+            <a href="/login" class="mt-6 inline-block w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                Go to Login
+            </a>
+        </div>
+
+        <!-- Error state -->
+        <div x-show="!loading && !success && hasToken" class="text-center py-6">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">Verification Failed</h3>
+            <p class="mt-2 text-gray-600" x-text="message"></p>
+
+            <!-- Resend option -->
+            <div class="mt-6 border-t pt-4">
+                <p class="text-sm text-gray-500 mb-3">Need a new verification link?</p>
+                <form @submit.prevent="resendVerification()" class="space-y-3">
+                    <input type="email" x-model="email" placeholder="Enter your email" required
+                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                    <button type="submit" :disabled="resending"
+                            class="w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50">
+                        <span x-show="!resending">Resend Verification Email</span>
+                        <span x-show="resending">Sending...</span>
+                    </button>
+                </form>
+                <p x-show="resendMessage" class="mt-3 text-sm" :class="resendSuccess ? 'text-green-600' : 'text-red-600'" x-text="resendMessage"></p>
+            </div>
+        </div>
+
+        <!-- No token state -->
+        <div x-show="!loading && !hasToken" class="text-center py-6">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100">
+                <svg class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">No Verification Token</h3>
+            <p class="mt-2 text-gray-600">Please use the link from your verification email.</p>
+
+            <!-- Resend option -->
+            <div class="mt-6 border-t pt-4">
+                <p class="text-sm text-gray-500 mb-3">Didn't receive an email? Enter your address to resend:</p>
+                <form @submit.prevent="resendVerification()" class="space-y-3">
+                    <input type="email" x-model="email" placeholder="Enter your email" required
+                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                    <button type="submit" :disabled="resending"
+                            class="w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50">
+                        <span x-show="!resending">Send Verification Email</span>
+                        <span x-show="resending">Sending...</span>
+                    </button>
+                </form>
+                <p x-show="resendMessage" class="mt-3 text-sm" :class="resendSuccess ? 'text-green-600' : 'text-red-600'" x-text="resendMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <p class="mt-4 text-center text-sm text-gray-600">
+        <a href="/login" class="font-medium text-primary-600 hover:text-primary-500">Back to Login</a>
+    </p>
+</div>
+
+<script>
+function emailVerification(token) {
+    return {
+        token: token,
+        hasToken: !!token,
+        loading: !!token,
+        success: false,
+        message: '',
+        email: '',
+        resending: false,
+        resendMessage: '',
+        resendSuccess: false,
+
+        async init() {
+            if (this.token) {
+                await this.verifyEmail();
+            }
+        },
+
+        async verifyEmail() {
+            try {
+                const response = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(this.token)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.success = true;
+                    this.message = data.message;
+                } else {
+                    this.success = false;
+                    this.message = data.detail || 'Verification failed. The link may be invalid or expired.';
+                }
+            } catch (error) {
+                this.success = false;
+                this.message = 'An error occurred. Please try again.';
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async resendVerification() {
+            if (!this.email) return;
+
+            this.resending = true;
+            this.resendMessage = '';
+
+            try {
+                const response = await fetch('/api/auth/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: this.email })
+                });
+                const data = await response.json();
+
+                this.resendSuccess = response.ok;
+                this.resendMessage = data.message;
+            } catch (error) {
+                this.resendSuccess = false;
+                this.resendMessage = 'An error occurred. Please try again.';
+            } finally {
+                this.resending = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

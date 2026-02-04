@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-semibold text-gray-900">Settings</h1>
+    <p class="mt-1 text-sm text-gray-500">Manage your account settings</p>
+</div>
+
+<div id="settings-message"></div>
+
+<div class="space-y-6">
+    <!-- Profile Section -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Profile Information</h2>
+        <form x-data="profileForm()" @submit.prevent="updateProfile($event)" class="space-y-4">
+            <div>
+                <label for="full_name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                <input type="text" name="full_name" id="full_name"
+                       value="{{ current_user.full_name }}"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" name="email" id="email"
+                       value="{{ current_user.email }}"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+            </div>
+            <div class="flex justify-end">
+                <button type="submit" :disabled="loading"
+                        class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+                    <span x-text="loading ? 'Saving...' : 'Update Profile'"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Password Section -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Change Password</h2>
+        <form x-data="passwordForm()" @submit.prevent="changePassword($event)" class="space-y-4">
+            <div>
+                <label for="current_password" class="block text-sm font-medium text-gray-700">Current Password</label>
+                <input type="password" name="current_password" id="current_password" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+            </div>
+            <div>
+                <label for="new_password" class="block text-sm font-medium text-gray-700">New Password</label>
+                <input type="password" name="new_password" id="new_password" required minlength="8"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                <p class="mt-1 text-xs text-gray-500">At least 8 characters</p>
+            </div>
+            <div>
+                <label for="confirm_password" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                <input type="password" name="confirm_password" id="confirm_password" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+            </div>
+            <div class="flex justify-end">
+                <button type="submit" :disabled="loading"
+                        class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+                    <span x-text="loading ? 'Changing...' : 'Change Password'"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Account Info -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Account Information</h2>
+        <dl class="divide-y divide-gray-200">
+            <div class="py-3 flex justify-between">
+                <dt class="text-sm font-medium text-gray-500">Role</dt>
+                <dd class="text-sm text-gray-900 capitalize">{{ current_user.role.value }}</dd>
+            </div>
+            <div class="py-3 flex justify-between">
+                <dt class="text-sm font-medium text-gray-500">Lab</dt>
+                <dd class="text-sm text-gray-900">{{ current_user.tenant.name }}</dd>
+            </div>
+            <div class="py-3 flex justify-between">
+                <dt class="text-sm font-medium text-gray-500">Member Since</dt>
+                <dd class="text-sm text-gray-900">{{ current_user.created_at.strftime('%B %d, %Y') }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    <!-- Lab Settings Section -->
+    <div class="bg-white shadow rounded-lg p-6" x-data="labSettings()" x-init="loadLabInfo()">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Lab Settings</h2>
+
+        <!-- Geographic Information -->
+        <div class="mb-6">
+            <h3 class="text-sm font-medium text-gray-700 mb-3">Geographic Information</h3>
+            <form @submit.prevent="updateGeoInfo()" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">City</label>
+                        <input type="text" x-model="geoInfo.city" placeholder="e.g., London"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Country</label>
+                        <input type="text" x-model="geoInfo.country" placeholder="e.g., United Kingdom"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" :disabled="savingGeo"
+                            class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+                        <span x-text="savingGeo ? 'Saving...' : 'Update Location'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Organization Membership -->
+        <div class="border-t border-gray-200 pt-6">
+            <h3 class="text-sm font-medium text-gray-700 mb-3">Organization Membership</h3>
+
+            <!-- Current organization status -->
+            <template x-if="labInfo.organization">
+                <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-green-800">Member of: <span x-text="labInfo.organization.name"></span></p>
+                            <p class="text-xs text-green-600 mt-1" x-show="labInfo.is_org_admin">You are an organization admin</p>
+                        </div>
+                        <button @click="leaveOrganization()" :disabled="leavingOrg"
+                                class="text-sm text-red-600 hover:text-red-800">
+                            Leave Organization
+                        </button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Not in an organization -->
+            <template x-if="!labInfo.organization">
+                <div>
+                    <p class="text-sm text-gray-500 mb-4">Your lab is not part of an organization. Join an existing organization or create a new one.</p>
+
+                    <!-- Search for organization -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search Organizations</label>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="orgSearch" @input.debounce.300ms="searchOrganizations()"
+                                   placeholder="Search by name..."
+                                   class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                        </div>
+
+                        <!-- Search results -->
+                        <template x-if="orgSearchResults.length > 0">
+                            <ul class="mt-2 border border-gray-200 rounded-md divide-y divide-gray-200">
+                                <template x-for="org in orgSearchResults" :key="org.id">
+                                    <li class="p-3 flex items-center justify-between hover:bg-gray-50">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900" x-text="org.name"></p>
+                                            <p class="text-xs text-gray-500" x-text="'Match: ' + Math.round(org.similarity_score * 100) + '%'"></p>
+                                        </div>
+                                        <button @click="requestJoin(org)"
+                                                class="text-sm text-primary-600 hover:text-primary-800">
+                                            Request to Join
+                                        </button>
+                                    </li>
+                                </template>
+                            </ul>
+                        </template>
+                    </div>
+
+                    <!-- Create new organization -->
+                    <div class="border-t border-gray-200 pt-4">
+                        <button @click="showCreateOrg = !showCreateOrg"
+                                class="text-sm text-primary-600 hover:text-primary-800">
+                            <span x-text="showCreateOrg ? 'Cancel' : 'Or create a new organization'"></span>
+                        </button>
+
+                        <template x-if="showCreateOrg">
+                            <form @submit.prevent="createOrganization()" class="mt-4 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Organization Name</label>
+                                    <input type="text" x-model="newOrg.name" required placeholder="e.g., Imperial College London"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Description</label>
+                                    <textarea x-model="newOrg.description" rows="2" placeholder="Brief description of the organization"
+                                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Website (optional)</label>
+                                    <input type="url" x-model="newOrg.website" placeholder="https://..."
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" :disabled="creatingOrg"
+                                            class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+                                        <span x-text="creatingOrg ? 'Creating...' : 'Create Organization'"></span>
+                                    </button>
+                                </div>
+                            </form>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Pending Join Requests (for org admins) -->
+        <template x-if="labInfo.is_org_admin && pendingRequests.length > 0">
+            <div class="border-t border-gray-200 pt-6 mt-6">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Pending Join Requests</h3>
+                <ul class="border border-gray-200 rounded-md divide-y divide-gray-200">
+                    <template x-for="req in pendingRequests" :key="req.id">
+                        <li class="p-3">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900" x-text="req.tenant_name"></p>
+                                    <p class="text-xs text-gray-500" x-text="'Requested by ' + req.requested_by_name"></p>
+                                    <p class="text-xs text-gray-400 mt-1" x-show="req.message" x-text="req.message"></p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button @click="approveJoinRequest(req.id)" class="text-sm text-green-600 hover:text-green-800">Approve</button>
+                                    <button @click="rejectJoinRequest(req.id)" class="text-sm text-red-600 hover:text-red-800">Reject</button>
+                                </div>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+function profileForm() {
+    return {
+        loading: false,
+        async updateProfile(event) {
+            this.loading = true;
+            const form = event.target;
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        full_name: formData.get('full_name'),
+                        email: formData.get('email'),
+                    })
+                });
+
+                const result = await response.json();
+                const messageDiv = document.getElementById('settings-message');
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-green-50 p-4">
+                            <p class="text-sm text-green-700">Profile updated successfully.</p>
+                        </div>`;
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${result.detail || 'Failed to update profile'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+
+function passwordForm() {
+    return {
+        loading: false,
+        async changePassword(event) {
+            this.loading = true;
+            const form = event.target;
+            const formData = new FormData(form);
+            const messageDiv = document.getElementById('settings-message');
+
+            const newPassword = formData.get('new_password');
+            const confirmPassword = formData.get('confirm_password');
+
+            if (newPassword !== confirmPassword) {
+                messageDiv.innerHTML = `
+                    <div class="mb-4 rounded-md bg-red-50 p-4">
+                        <p class="text-sm text-red-700">New passwords do not match.</p>
+                    </div>`;
+                this.loading = false;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        current_password: formData.get('current_password'),
+                        new_password: newPassword,
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-green-50 p-4">
+                            <p class="text-sm text-green-700">Password changed successfully.</p>
+                        </div>`;
+                    form.reset();
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${result.detail || 'Failed to change password'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+
+function labSettings() {
+    return {
+        labInfo: { organization: null, is_org_admin: false },
+        geoInfo: { city: '', country: '' },
+        savingGeo: false,
+        orgSearch: '',
+        orgSearchResults: [],
+        showCreateOrg: false,
+        newOrg: { name: '', description: '', website: '' },
+        creatingOrg: false,
+        leavingOrg: false,
+        pendingRequests: [],
+
+        async loadLabInfo() {
+            try {
+                // Load current user/tenant info
+                const response = await fetch('/api/auth/me', { credentials: 'include' });
+                if (response.ok) {
+                    const user = await response.json();
+                    if (user.tenant) {
+                        this.geoInfo.city = user.tenant.city || '';
+                        this.geoInfo.country = user.tenant.country || '';
+                        this.labInfo.organization = user.tenant.organization || null;
+                        this.labInfo.is_org_admin = user.tenant.is_org_admin || false;
+                    }
+                }
+
+                // Load pending requests if org admin
+                if (this.labInfo.is_org_admin) {
+                    await this.loadPendingRequests();
+                }
+            } catch (error) {
+                console.error('Error loading lab info:', error);
+            }
+        },
+
+        async loadPendingRequests() {
+            try {
+                const response = await fetch('/api/organizations/join-requests/pending', { credentials: 'include' });
+                if (response.ok) {
+                    this.pendingRequests = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading pending requests:', error);
+            }
+        },
+
+        async updateGeoInfo() {
+            this.savingGeo = true;
+            const messageDiv = document.getElementById('settings-message');
+            try {
+                const response = await fetch('/api/organizations/tenant/geo', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.geoInfo)
+                });
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-green-50 p-4">
+                            <p class="text-sm text-green-700">Location updated successfully.</p>
+                        </div>`;
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${error.detail || 'Failed to update location'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error updating geo info:', error);
+            } finally {
+                this.savingGeo = false;
+            }
+        },
+
+        async searchOrganizations() {
+            if (this.orgSearch.length < 2) {
+                this.orgSearchResults = [];
+                return;
+            }
+            try {
+                const response = await fetch(`/api/organizations/search?q=${encodeURIComponent(this.orgSearch)}`, { credentials: 'include' });
+                if (response.ok) {
+                    this.orgSearchResults = await response.json();
+                }
+            } catch (error) {
+                console.error('Error searching organizations:', error);
+            }
+        },
+
+        async requestJoin(org) {
+            const message = prompt('Add a message to your request (optional):');
+            try {
+                const response = await fetch('/api/organizations/join-requests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        organization_id: org.id,
+                        message: message || null
+                    })
+                });
+                const messageDiv = document.getElementById('settings-message');
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-green-50 p-4">
+                            <p class="text-sm text-green-700">Join request sent to ${org.name}. Waiting for approval.</p>
+                        </div>`;
+                    this.orgSearch = '';
+                    this.orgSearchResults = [];
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${error.detail || 'Failed to send join request'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error requesting join:', error);
+            }
+        },
+
+        async createOrganization() {
+            this.creatingOrg = true;
+            const messageDiv = document.getElementById('settings-message');
+            try {
+                const response = await fetch('/api/organizations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.newOrg)
+                });
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-green-50 p-4">
+                            <p class="text-sm text-green-700">Organization created successfully. You are now the organization admin.</p>
+                        </div>`;
+                    this.showCreateOrg = false;
+                    this.newOrg = { name: '', description: '', website: '' };
+                    await this.loadLabInfo();
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${error.detail || 'Failed to create organization'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error creating organization:', error);
+            } finally {
+                this.creatingOrg = false;
+            }
+        },
+
+        async leaveOrganization() {
+            if (!confirm('Are you sure you want to leave this organization?')) return;
+            this.leavingOrg = true;
+            const messageDiv = document.getElementById('settings-message');
+            try {
+                const response = await fetch('/api/organizations/tenant/leave', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-green-50 p-4">
+                            <p class="text-sm text-green-700">You have left the organization.</p>
+                        </div>`;
+                    await this.loadLabInfo();
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${error.detail || 'Failed to leave organization'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error leaving organization:', error);
+            } finally {
+                this.leavingOrg = false;
+            }
+        },
+
+        async approveJoinRequest(requestId) {
+            try {
+                const response = await fetch(`/api/organizations/join-requests/${requestId}/approve`, {
+                    method: 'PUT',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    await this.loadPendingRequests();
+                } else {
+                    alert('Failed to approve request');
+                }
+            } catch (error) {
+                console.error('Error approving request:', error);
+            }
+        },
+
+        async rejectJoinRequest(requestId) {
+            try {
+                const response = await fetch(`/api/organizations/join-requests/${requestId}/reject`, {
+                    method: 'PUT',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    await this.loadPendingRequests();
+                } else {
+                    alert('Failed to reject request');
+                }
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+    <p class="mt-1 text-sm text-gray-500">Welcome to {{ app_name }}</p>
+</div>
+
+<!-- Stats cards -->
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Total Stocks -->
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Total Stocks</dt>
+                        <dd class="text-lg font-semibold text-gray-900" id="stat-stocks">{{ stats.total_stocks or 0 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 px-5 py-3">
+            <div class="text-sm">
+                <a href="/stocks" class="font-medium text-primary-600 hover:text-primary-500">View all</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Crosses -->
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Active Crosses</dt>
+                        <dd class="text-lg font-semibold text-gray-900" id="stat-crosses">{{ stats.active_crosses or 0 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 px-5 py-3">
+            <div class="text-sm">
+                <a href="/crosses" class="font-medium text-primary-600 hover:text-primary-500">View all</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Tags</dt>
+                        <dd class="text-lg font-semibold text-gray-900" id="stat-tags">{{ stats.total_tags or 0 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 px-5 py-3">
+            <div class="text-sm">
+                <a href="/tags" class="font-medium text-primary-600 hover:text-primary-500">Manage</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Recent Updates</dt>
+                        <dd class="text-lg font-semibold text-gray-900" id="stat-recent">{{ stats.recent_updates or 0 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 px-5 py-3">
+            <div class="text-sm">
+                <span class="text-gray-500">Last 7 days</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick actions -->
+<div class="mt-8">
+    <h2 class="text-lg font-medium text-gray-900">Quick Actions</h2>
+    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <a href="/stocks/new" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span class="mt-2 block text-sm font-semibold text-gray-900">Add New Stock</span>
+        </a>
+
+        <a href="/crosses/new" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span class="mt-2 block text-sm font-semibold text-gray-900">Plan a Cross</span>
+        </a>
+
+        <a href="/stocks/import" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span class="mt-2 block text-sm font-semibold text-gray-900">Import Stocks</span>
+        </a>
+    </div>
+</div>
+
+<!-- Recent stocks -->
+<div class="mt-8">
+    <div class="flex items-center justify-between">
+        <h2 class="text-lg font-medium text-gray-900">Recent Stocks</h2>
+        <a href="/stocks" class="text-sm font-medium text-primary-600 hover:text-primary-500">View all</a>
+    </div>
+    <div class="mt-4" id="recent-stocks" x-data="recentStocks()" x-init="loadStocks()">
+        <template x-if="loading">
+            <div class="animate-pulse">
+                <div class="h-20 bg-gray-200 rounded"></div>
+            </div>
+        </template>
+
+        <template x-if="!loading && stocks.length === 0">
+            <div class="bg-white shadow rounded-lg p-6 text-center">
+                <p class="text-sm text-gray-500">No stocks yet. <a href="/stocks/new" class="text-primary-600 hover:text-primary-500">Add your first stock</a>.</p>
+            </div>
+        </template>
+
+        <template x-if="!loading && stocks.length > 0">
+            <div class="bg-white shadow overflow-hidden rounded-lg">
+                <ul class="divide-y divide-gray-200">
+                    <template x-for="stock in stocks" :key="stock.id">
+                        <li>
+                            <a :href="'/stocks/' + stock.id" class="block hover:bg-gray-50">
+                                <div class="px-4 py-4 sm:px-6">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-medium text-primary-600 truncate" x-text="stock.stock_id"></p>
+                                        <div class="ml-2 flex-shrink-0 flex">
+                                            <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800" x-text="stock.source || 'Local'"></p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 sm:flex sm:justify-between">
+                                        <div class="sm:flex">
+                                            <p class="text-sm text-gray-500 truncate max-w-md" x-text="stock.genotype"></p>
+                                        </div>
+                                        <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                                            <p x-text="stock.location || 'No location'"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+function recentStocks() {
+    return {
+        loading: true,
+        stocks: [],
+        async loadStocks() {
+            this.loading = true;
+            try {
+                const response = await fetch('/api/stocks?page_size=5', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    this.stocks = data.items || [];
+                }
+            } catch (error) {
+                console.error('Error loading recent stocks:', error);
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

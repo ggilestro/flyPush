@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-semibold text-gray-900">My Requests</h1>
+    <p class="mt-1 text-sm text-gray-500">Track your outgoing stock requests</p>
+</div>
+
+<div x-data="myRequests()" x-init="loadRequests(); loadStats()">
+    <!-- Stats cards -->
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500">Pending</div>
+            <div class="mt-1 text-2xl font-semibold text-yellow-600" x-text="stats.pending || 0"></div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500">Approved</div>
+            <div class="mt-1 text-2xl font-semibold text-green-600" x-text="stats.approved || 0"></div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500">Fulfilled</div>
+            <div class="mt-1 text-2xl font-semibold text-blue-600" x-text="stats.fulfilled || 0"></div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="text-sm font-medium text-gray-500">Rejected</div>
+            <div class="mt-1 text-2xl font-semibold text-red-600" x-text="stats.rejected || 0"></div>
+        </div>
+    </div>
+
+    <!-- Loading state -->
+    <template x-if="loading">
+        <div class="animate-pulse bg-white shadow rounded-lg p-6">
+            <div class="space-y-3">
+                <div class="h-4 bg-gray-200 rounded"></div>
+                <div class="h-4 bg-gray-200 rounded"></div>
+                <div class="h-4 bg-gray-200 rounded"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Empty state -->
+    <template x-if="!loading && requests.length === 0">
+        <div class="bg-white shadow rounded-lg p-6 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">No requests yet</h3>
+            <p class="mt-1 text-sm text-gray-500">Browse the stock exchange to request stocks from other labs.</p>
+            <div class="mt-6">
+                <a href="/exchange" class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    Browse Stocks
+                </a>
+            </div>
+        </div>
+    </template>
+
+    <!-- Requests list -->
+    <template x-if="!loading && requests.length > 0">
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From Lab</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
+                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="req in requests" :key="req.id">
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900" x-text="req.stock_id"></div>
+                                <div class="text-sm text-gray-500 max-w-md truncate" x-text="req.stock_genotype"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="req.owner_tenant_name || 'Unknown'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                      :class="{
+                                          'bg-yellow-100 text-yellow-800': req.status === 'pending',
+                                          'bg-green-100 text-green-800': req.status === 'approved',
+                                          'bg-blue-100 text-blue-800': req.status === 'fulfilled',
+                                          'bg-red-100 text-red-800': req.status === 'rejected',
+                                          'bg-gray-100 text-gray-800': req.status === 'cancelled'
+                                      }"
+                                      x-text="req.status"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(req.created_at)"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <template x-if="req.status === 'pending'">
+                                    <button @click="cancelRequest(req.id)" class="text-red-600 hover:text-red-900">Cancel</button>
+                                </template>
+                                <template x-if="req.response_message">
+                                    <button @click="showMessage(req)" class="text-primary-600 hover:text-primary-900">View Response</button>
+                                </template>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <!-- Message Modal -->
+    <div x-show="showMessageModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showMessageModal = false"></div>
+            <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Response</h3>
+                <template x-if="selectedRequest">
+                    <div>
+                        <div class="mb-4 p-3 bg-gray-50 rounded-md">
+                            <p class="text-sm font-medium text-gray-900" x-text="selectedRequest.stock_id"></p>
+                            <p class="text-sm text-gray-500" x-text="'Status: ' + selectedRequest.status"></p>
+                        </div>
+                        <template x-if="selectedRequest.message">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700">Your message:</label>
+                                <p class="mt-1 text-sm text-gray-600" x-text="selectedRequest.message"></p>
+                            </div>
+                        </template>
+                        <template x-if="selectedRequest.response_message">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Response:</label>
+                                <p class="mt-1 text-sm text-gray-600" x-text="selectedRequest.response_message"></p>
+                            </div>
+                        </template>
+                        <div class="mt-6 flex justify-end">
+                            <button @click="showMessageModal = false"
+                                    class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function myRequests() {
+    return {
+        loading: true,
+        requests: [],
+        stats: {},
+        showMessageModal: false,
+        selectedRequest: null,
+
+        async loadRequests() {
+            this.loading = true;
+            try {
+                const response = await fetch('/api/requests/outgoing', { credentials: 'include' });
+                if (response.ok) {
+                    this.requests = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadStats() {
+            try {
+                const response = await fetch('/api/requests/stats', { credentials: 'include' });
+                if (response.ok) {
+                    this.stats = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        },
+
+        formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString();
+        },
+
+        showMessage(req) {
+            this.selectedRequest = req;
+            this.showMessageModal = true;
+        },
+
+        async cancelRequest(requestId) {
+            if (!confirm('Are you sure you want to cancel this request?')) return;
+            try {
+                const response = await fetch(`/api/requests/${requestId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    await this.loadRequests();
+                    await this.loadStats();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Failed to cancel request');
+                }
+            } catch (error) {
+                console.error('Error cancelling request:', error);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1995 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2">
+            <li><a href="/stocks" class="text-gray-500 hover:text-gray-700">Stocks</a></li>
+            <li class="flex items-center">
+                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span class="ml-2 text-gray-900 font-medium">Import</span>
+            </li>
+        </ol>
+    </nav>
+    <h1 class="mt-4 text-2xl font-semibold text-gray-900">Import Stocks</h1>
+    <p class="mt-1 text-sm text-gray-600">Bulk import stocks from CSV or Excel files</p>
+</div>
+
+<div id="import-message"></div>
+
+<div x-data="importWizard()" class="space-y-6">
+    <!-- Progress Steps -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <nav aria-label="Progress">
+            <ol class="flex items-center justify-center space-x-4">
+                <li class="flex items-center">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-full"
+                          :class="currentStep >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'">1</span>
+                    <span class="ml-2 text-sm font-medium" :class="currentStep >= 1 ? 'text-primary-600' : 'text-gray-500'">Upload</span>
+                </li>
+                <li class="flex items-center">
+                    <div class="w-8 h-0.5" :class="currentStep >= 2 ? 'bg-primary-600' : 'bg-gray-200'"></div>
+                </li>
+                <li class="flex items-center">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-full"
+                          :class="currentStep >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'">2</span>
+                    <span class="ml-2 text-sm font-medium" :class="currentStep >= 2 ? 'text-primary-600' : 'text-gray-500'">Map</span>
+                </li>
+                <li class="flex items-center">
+                    <div class="w-8 h-0.5" :class="currentStep >= 3 ? 'bg-primary-600' : 'bg-gray-200'"></div>
+                </li>
+                <li class="flex items-center">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-full"
+                          :class="currentStep >= 3 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'">3</span>
+                    <span class="ml-2 text-sm font-medium" :class="currentStep >= 3 ? 'text-primary-600' : 'text-gray-500'">Preview</span>
+                </li>
+                <li class="flex items-center" x-show="phase1Result?.conflicting_rows?.length > 0">
+                    <div class="w-8 h-0.5" :class="currentStep >= 4 ? 'bg-primary-600' : 'bg-gray-200'"></div>
+                </li>
+                <li class="flex items-center" x-show="phase1Result?.conflicting_rows?.length > 0">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-full"
+                          :class="currentStep >= 4 ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-500'">4</span>
+                    <span class="ml-2 text-sm font-medium" :class="currentStep >= 4 ? 'text-amber-600' : 'text-gray-500'">Resolve</span>
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Step 1: Upload File & Templates -->
+    <div x-show="currentStep === 1" class="space-y-6">
+        <!-- Download Templates -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-medium text-gray-900">Download a Template (optional)</h2>
+                <span class="text-sm text-gray-500">Choose the format that matches your data</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Basic Template -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="font-medium text-gray-900">Basic</h3>
+                            <p class="text-sm text-gray-500 mt-1">stock_id + genotype only</p>
+                            <p class="text-xs text-gray-400 mt-2">For quick internal stock entry</p>
+                        </div>
+                        <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <a href="/api/imports/template?template_type=basic" download
+                       class="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500">
+                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download CSV
+                    </a>
+                </div>
+
+                <!-- Repository Template -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="font-medium text-gray-900">Repository</h3>
+                            <p class="text-sm text-gray-500 mt-1">+ source, stock center ID</p>
+                            <p class="text-xs text-gray-400 mt-2">For BDSC, VDRC, Kyoto stocks</p>
+                        </div>
+                        <svg class="h-8 w-8 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <a href="/api/imports/template?template_type=repository" download
+                       class="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500">
+                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download CSV
+                    </a>
+                </div>
+
+                <!-- Full Template -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="font-medium text-gray-900">Full</h3>
+                            <p class="text-sm text-gray-500 mt-1">+ trays, positions, all fields</p>
+                            <p class="text-xs text-gray-400 mt-2">Complete with physical locations</p>
+                        </div>
+                        <svg class="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                    </div>
+                    <a href="/api/imports/template?template_type=full" download
+                       class="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500">
+                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Format Help -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900">What should my file look like?</h2>
+                    <p class="text-sm text-gray-500 mt-1">Your CSV or Excel file needs at minimum two columns: a unique ID and the genotype for each stock.</p>
+                </div>
+                <button @click="showFormatHelp = !showFormatHelp"
+                        class="text-primary-600 hover:text-primary-500 text-sm font-medium flex items-center">
+                    <span x-text="showFormatHelp ? 'Hide details' : 'Show details'"></span>
+                    <svg class="h-5 w-5 ml-1 transition-transform" :class="{ 'rotate-180': showFormatHelp }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+            </div>
+
+            <div x-show="showFormatHelp" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mt-4">
+                <!-- Quick Summary -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <h3 class="font-medium text-blue-900 mb-2">Quick Summary</h3>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span><strong>Required:</strong> Each row needs either a <strong>repository stock ID</strong> (e.g., BDSC#) <em>or</em> a <strong>genotype</strong> (or both)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span><strong>Stock ID:</strong> Optional - if not provided, we'll auto-generate one (e.g., "BDSC-3605" or "IMP-0001")</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span><strong>Format:</strong> CSV (.csv) or Excel (.xlsx) with column headers in the first row</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span><strong>Flexible:</strong> Column names don't need to match exactly - you'll map them in the next step</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Example Table -->
+                <div class="mb-4">
+                    <h3 class="font-medium text-gray-900 mb-2">Example spreadsheet</h3>
+                    <p class="text-sm text-gray-600 mb-3">Here's what a typical import file might look like. Your column names can vary - we'll help you map them:</p>
+
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">Stock ID</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">Genotype</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">BDSC#</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">VDRC#</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">From Lab</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">Rack</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody class="font-mono text-xs">
+                                <tr class="bg-white">
+                                    <td class="px-3 py-2 border-b text-gray-900">BL-3605</td>
+                                    <td class="px-3 py-2 border-b text-gray-900">w[1118]; P{GAL4-elav.L}3</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">3605</td>
+                                    <td class="px-3 py-2 border-b text-gray-600"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600">Rack A</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">Elav-GAL4 driver</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-3 py-2 border-b text-gray-900">LAB-001</td>
+                                    <td class="px-3 py-2 border-b text-gray-900">y[1] w[*]; Sp/CyO</td>
+                                    <td class="px-3 py-2 border-b text-gray-600"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600">Rack A</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">Balancer stock</td>
+                                </tr>
+                                <tr class="bg-white">
+                                    <td class="px-3 py-2 border-b text-gray-900">VDRC-100821</td>
+                                    <td class="px-3 py-2 border-b text-gray-900">w[1118]; P{KK}dpp</td>
+                                    <td class="px-3 py-2 border-b text-gray-600"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600">100821</td>
+                                    <td class="px-3 py-2 border-b text-gray-600"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600">Rack B</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">RNAi line</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-3 py-2 text-gray-900">EXT-042</td>
+                                    <td class="px-3 py-2 text-gray-900">yw; UAS-ChR2-XXL</td>
+                                    <td class="px-3 py-2 text-gray-600"></td>
+                                    <td class="px-3 py-2 text-gray-600"></td>
+                                    <td class="px-3 py-2 text-gray-600">Smith Lab</td>
+                                    <td class="px-3 py-2 text-gray-600">Rack C</td>
+                                    <td class="px-3 py-2 text-gray-600">Optogenetics</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Available Fields -->
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-2">Available fields</h3>
+                    <p class="text-sm text-gray-600 mb-3">These are the fields you can import. Column names are flexible - common variations are auto-detected:</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div class="flex items-start p-2 bg-amber-50 rounded border border-amber-300">
+                            <span class="text-amber-600 font-bold mr-2">*</span>
+                            <div>
+                                <strong class="text-gray-900">genotype</strong>
+                                <span class="text-amber-700 ml-1">(required if no repo ID)</span>
+                                <p class="text-xs text-gray-600">Full genotype description. Also recognized: "Geno", "Genotypes"</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start p-2 bg-amber-50 rounded border border-amber-300">
+                            <span class="text-amber-600 font-bold mr-2">*</span>
+                            <div>
+                                <strong class="text-gray-900">repository_stock_id</strong>
+                                <span class="text-amber-700 ml-1">(required if no genotype)</span>
+                                <p class="text-xs text-gray-600">Stock center catalog number. Use repository-specific columns like "BDSC#", "VDRC#", "Kyoto#" - the repository is auto-detected from the column name.</p>
+                            </div>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                            <strong class="text-gray-900">stock_id</strong>
+                            <span class="text-gray-500 ml-1">(optional)</span>
+                            <p class="text-xs text-gray-600">Unique identifier. Auto-generated if not provided. Also: "Stock ID", "ID", "Stock #"</p>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                            <strong class="text-gray-900">repository</strong>
+                            <p class="text-xs text-gray-600">Stock center name (BDSC, VDRC, Kyoto, etc.). Also: "Source", "From", "Stock Center"</p>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                            <strong class="text-gray-900">external_source</strong>
+                            <p class="text-xs text-gray-600">Lab or researcher who provided the stock. Also: "Lab", "Donor", "From Lab"</p>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                            <strong class="text-gray-900">tray_name</strong>
+                            <p class="text-xs text-gray-600">Physical storage location. Also: "Tray", "Rack", "Shelf", "Location", "Box"</p>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                            <strong class="text-gray-900">position</strong>
+                            <p class="text-xs text-gray-600">Position within the tray. Also: "Pos", "Slot", "Well"</p>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                            <strong class="text-gray-900">notes</strong>
+                            <p class="text-xs text-gray-600">Any additional notes. Also: "Comments", "Description", "Remarks"</p>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                            <strong class="text-gray-900">tags</strong>
+                            <p class="text-xs text-gray-600">Tags for categorization (comma or semicolon-separated, e.g., "GAL4; screening"). Also: "Labels", "Categories"</p>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                            <strong class="text-gray-900">visibility</strong>
+                            <p class="text-xs text-gray-600">Who can see this stock: "lab_only", "organization", or "public"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload File -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Upload Your File</h2>
+
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
+                 @dragover.prevent="dragover = true"
+                 @dragleave.prevent="dragover = false"
+                 @drop.prevent="handleDrop($event)"
+                 :class="{ 'border-primary-500 bg-primary-50': dragover }">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <div class="mt-4 flex text-sm leading-6 text-gray-600 justify-center">
+                    <label for="file-upload" class="relative cursor-pointer rounded-md bg-white font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
+                        <span>Upload a file</span>
+                        <input id="file-upload" name="file-upload" type="file" accept=".csv,.xlsx,.xls" class="sr-only" @change="handleFileSelect($event)">
+                    </label>
+                    <p class="pl-1">or drag and drop</p>
+                </div>
+                <p class="text-xs leading-5 text-gray-600">CSV or Excel files up to 10MB</p>
+
+                <div x-show="selectedFile" class="mt-4 p-3 bg-gray-100 rounded-md inline-flex items-center">
+                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="text-sm text-gray-700" x-text="selectedFile?.name"></span>
+                    <button @click="clearFile()" class="ml-2 text-gray-400 hover:text-gray-500">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-end">
+                <button @click="analyzeFile()" :disabled="!selectedFile || previewLoading"
+                        class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="previewLoading" class="mr-2">
+                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                    <span x-text="previewLoading ? 'Analyzing...' : 'Continue'"></span>
+                    <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Map Your Columns -->
+    <div x-show="currentStep === 2" x-cloak class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-medium text-gray-900">Map Your Columns</h2>
+                <p class="text-sm text-gray-500">Tell us what each column in your file represents.</p>
+            </div>
+            <div class="text-sm text-gray-500">
+                <span x-text="preview?.total_rows || 0"></span> rows detected
+            </div>
+        </div>
+
+        <!-- Legend / Help -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 class="text-sm font-medium text-gray-700 mb-2">How to map your columns:</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-gray-600">
+                <div class="flex items-start">
+                    <span class="inline-block w-3 h-3 mt-0.5 mr-2 rounded bg-green-200 border border-green-400"></span>
+                    <div>
+                        <strong>Import Field</strong> - Maps to a stock property
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <span class="inline-block w-3 h-3 mt-0.5 mr-2 rounded bg-amber-200 border border-amber-400"></span>
+                    <div>
+                        <strong>Coalesce</strong> - Multiple columns → same field
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <span class="inline-block w-3 h-3 mt-0.5 mr-2 rounded bg-blue-200 border border-blue-400"></span>
+                    <div>
+                        <strong>Custom</strong> - Saved as metadata
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <span class="inline-block w-3 h-3 mt-0.5 mr-2 rounded bg-gray-200 border border-gray-300"></span>
+                    <div>
+                        <strong>Ignore</strong> - Will not be imported
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warnings -->
+        <template x-if="preview?.validation_warnings?.length > 0">
+            <div class="mb-6 rounded-md bg-yellow-50 p-4">
+                <div class="flex">
+                    <svg class="h-5 w-5 text-yellow-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <div class="ml-3">
+                        <ul class="text-sm text-yellow-700 list-disc list-inside">
+                            <template x-for="warning in preview?.validation_warnings || []" :key="warning">
+                                <li x-text="warning"></li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Column Mapping Table -->
+        <div class="overflow-x-auto border rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Your Column</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Example Data</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                            <div class="flex items-center">
+                                Import As
+                                <span class="ml-1 text-red-500">*</span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="(col, index) in preview?.columns || []" :key="col.name">
+                        <tr :class="{
+                            'bg-green-50 border-l-4 border-l-green-500': columnMappings[col.name]?.target_field && columnMappings[col.name]?.target_field !== 'custom' && getFieldUsageCount(columnMappings[col.name]?.target_field) === 1,
+                            'bg-amber-50 border-l-4 border-l-amber-500': columnMappings[col.name]?.target_field && columnMappings[col.name]?.target_field !== 'custom' && getFieldUsageCount(columnMappings[col.name]?.target_field) > 1,
+                            'bg-blue-50 border-l-4 border-l-blue-500': columnMappings[col.name]?.target_field === 'custom',
+                            'bg-gray-50 border-l-4 border-l-gray-300': !columnMappings[col.name]?.target_field
+                        }">
+                            <td class="px-4 py-3">
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-gray-900" x-text="col.name"></span>
+                                    <template x-if="col.auto_detected">
+                                        <span class="mt-1 text-xs text-green-600">
+                                            Detected as: <strong x-text="getFieldLabel(col.auto_detected)"></strong>
+                                        </span>
+                                    </template>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm text-gray-600 font-mono max-w-xs">
+                                    <template x-for="(val, vIdx) in (col.sample_values?.slice(0, 2) || [])" :key="vIdx">
+                                        <div class="truncate" x-text="val"></div>
+                                    </template>
+                                    <template x-if="!col.sample_values?.length">
+                                        <span class="text-gray-400 italic">empty</span>
+                                    </template>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <select x-model="columnMappings[col.name].target_field"
+                                        @change="handleMappingChange(col.name)"
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+                                        :class="{
+                                            'bg-green-50 border-green-300': columnMappings[col.name]?.target_field && columnMappings[col.name]?.target_field !== 'custom' && getFieldUsageCount(columnMappings[col.name]?.target_field) === 1,
+                                            'bg-amber-50 border-amber-300': columnMappings[col.name]?.target_field && columnMappings[col.name]?.target_field !== 'custom' && getFieldUsageCount(columnMappings[col.name]?.target_field) > 1,
+                                            'bg-blue-50 border-blue-300': columnMappings[col.name]?.target_field === 'custom'
+                                        }">
+                                    <option value="">-- Do not import --</option>
+                                    <optgroup label="Required Fields">
+                                        <template x-for="field in preview?.required_fields || []" :key="field">
+                                            <option :value="field"
+                                                    :selected="columnMappings[col.name]?.target_field === field"
+                                                    x-text="getFieldLabel(field) + (getFieldUsageCount(field) > 0 && columnMappings[col.name]?.target_field !== field ? ' (+ coalesce)' : '')"></option>
+                                        </template>
+                                    </optgroup>
+                                    <optgroup label="Optional Fields">
+                                        <template x-for="field in getOptionalFields()" :key="field">
+                                            <option :value="field"
+                                                    :selected="columnMappings[col.name]?.target_field === field"
+                                                    x-text="getFieldLabel(field) + (getFieldUsageCount(field) > 0 && columnMappings[col.name]?.target_field !== field ? ' (+ coalesce)' : '')"></option>
+                                        </template>
+                                    </optgroup>
+                                    <optgroup label="Other">
+                                        <option value="custom">Custom (save as metadata)</option>
+                                    </optgroup>
+                                </select>
+                                <!-- Coalesce indicator -->
+                                <template x-if="columnMappings[col.name]?.target_field && columnMappings[col.name]?.target_field !== 'custom' && getFieldUsageCount(columnMappings[col.name]?.target_field) > 1">
+                                    <div class="mt-1 text-xs text-amber-600 flex items-center">
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span>Coalesce: first non-empty from <span x-text="getColumnsForField(columnMappings[col.name]?.target_field).join(', ')"></span></span>
+                                    </div>
+                                </template>
+                                <!-- Custom metadata key input -->
+                                <template x-if="columnMappings[col.name]?.target_field === 'custom'">
+                                    <div class="mt-2">
+                                        <label class="block text-xs text-gray-500 mb-1">Metadata key:</label>
+                                        <div class="flex items-center">
+                                            <span class="text-xs text-blue-600 mr-1">metadata.</span>
+                                            <input type="text"
+                                                   x-model="columnMappings[col.name].custom_key"
+                                                   :placeholder="col.name.toLowerCase().replace(/\\s+/g, '_').replace(/-/g, '_')"
+                                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1 px-2 bg-blue-50">
+                                        </div>
+                                    </div>
+                                </template>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Required Fields Status -->
+        <div class="mt-4 p-3 rounded-lg" :class="hasAnyRequiredFieldMapped() ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+            <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center">
+                    <template x-if="hasAnyRequiredFieldMapped()">
+                        <svg class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </template>
+                    <template x-if="!hasAnyRequiredFieldMapped()">
+                        <svg class="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </template>
+                    <div>
+                        <span :class="hasAnyRequiredFieldMapped() ? 'text-green-800' : 'text-red-800'" class="font-medium">
+                            <template x-if="hasAnyRequiredFieldMapped()">Ready to import</template>
+                            <template x-if="!hasAnyRequiredFieldMapped()">Missing required data</template>
+                        </span>
+                        <span class="text-gray-600 ml-2">
+                            - need at least one of:
+                            <template x-for="(field, idx) in preview?.required_fields || []" :key="field">
+                                <span>
+                                    <span :class="isRequiredFieldMapped(field) ? 'text-green-700 font-medium' : 'text-gray-500'" x-text="field === 'repository_stock_id' ? 'Repository Stock #' : 'Genotype'"></span><span x-show="idx < (preview?.required_fields?.length || 0) - 1"> or </span>
+                                </span>
+                            </template>
+                        </span>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500">
+                    stock_id is optional (auto-generated)
+                </div>
+            </div>
+        </div>
+
+        <!-- Field Generators -->
+        <div class="mt-6 border-t pt-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-900">Generate Missing Fields</h3>
+                    <p class="text-xs text-gray-500">Create required fields from patterns (e.g., stock_id from other columns)</p>
+                </div>
+                <button @click="addFieldGenerator()"
+                        class="inline-flex items-center rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200">
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Generator
+                </button>
+            </div>
+
+            <!-- Missing Required Fields Alert -->
+            <template x-if="getMissingRequiredFields().length > 0">
+                <div class="mb-4 rounded-md bg-red-50 p-3">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="ml-2 text-sm text-red-700">
+                            Missing required fields: <strong x-text="getMissingRequiredFields().join(', ')"></strong>
+                            - map a column or use a generator.
+                        </span>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Generator List -->
+            <div class="space-y-3">
+                <template x-for="(gen, index) in fieldGenerators" :key="index">
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
+                        <select x-model="gen.target_field"
+                                class="block w-32 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm">
+                            <option value="">Target field</option>
+                            <template x-for="field in preview?.required_fields || []" :key="field">
+                                <option :value="field" x-text="field"></option>
+                            </template>
+                        </select>
+                        <span class="text-gray-500">=</span>
+                        <input type="text"
+                               x-model="gen.pattern"
+                               placeholder="Pattern: {Column1}-{Column2}"
+                               class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm">
+                        <div class="text-xs text-gray-500 max-w-xs truncate" x-text="'Preview: ' + previewGenerator(gen)"></div>
+                        <button @click="removeFieldGenerator(index)" class="text-red-400 hover:text-red-500">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Column Name Reference -->
+            <template x-if="fieldGenerators.length > 0">
+                <div class="mt-3 text-xs text-gray-500">
+                    <span class="font-medium">Available columns:</span>
+                    <span x-text="(preview?.columns || []).map(c => '{' + c.name + '}').join(', ')"></span>
+                </div>
+            </template>
+        </div>
+
+        <!-- Navigation -->
+        <div class="mt-6 flex justify-between">
+            <button @click="goToStep(1)"
+                    class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <svg class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+            </button>
+            <button @click="goToStep(3)"
+                    :disabled="!canProceedToPreview()"
+                    class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                Continue
+                <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 3: Preview & Import -->
+    <div x-show="currentStep === 3" x-cloak class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Preview & Import</h2>
+
+        <!-- Mapping Summary -->
+        <div class="mb-6">
+            <h3 class="text-sm font-medium text-gray-700 mb-2">Column Mapping Summary</h3>
+            <div class="bg-gray-50 rounded-md p-3 space-y-1">
+                <template x-for="col in preview?.columns || []" :key="col.name">
+                    <div class="flex items-center text-sm" x-show="columnMappings[col.name]?.target_field">
+                        <span class="text-gray-600" x-text="col.name"></span>
+                        <svg class="h-4 w-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                        <template x-if="columnMappings[col.name]?.target_field === 'custom'">
+                            <span class="font-medium text-blue-600">
+                                metadata.<span x-text="getMetadataKey(col.name)"></span>
+                            </span>
+                        </template>
+                        <template x-if="columnMappings[col.name]?.target_field && columnMappings[col.name]?.target_field !== 'custom'">
+                            <span class="font-medium"
+                                  :class="getFieldUsageCount(columnMappings[col.name]?.target_field) > 1 ? 'text-amber-600' : 'text-green-600'"
+                                  x-text="columnMappings[col.name]?.target_field"></span>
+                        </template>
+                        <template x-if="columnMappings[col.name]?.target_field && columnMappings[col.name]?.target_field !== 'custom' && getFieldUsageCount(columnMappings[col.name]?.target_field) > 1">
+                            <span class="ml-1 text-xs text-amber-500">(coalesce)</span>
+                        </template>
+                        <template x-if="col.auto_detected && columnMappings[col.name]?.target_field === col.auto_detected">
+                            <svg class="h-4 w-4 ml-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </template>
+                    </div>
+                </template>
+                <template x-for="gen in fieldGenerators" :key="gen.target_field">
+                    <div class="flex items-center text-sm" x-show="gen.target_field && gen.pattern">
+                        <span class="italic text-purple-600">Generated</span>
+                        <svg class="h-4 w-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                        <span class="font-medium text-purple-600" x-text="gen.target_field"></span>
+                        <span class="ml-2 text-gray-400 text-xs" x-text="'(' + gen.pattern + ')'"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Preview Table -->
+        <div class="mb-6">
+            <h3 class="text-sm font-medium text-gray-700 mb-2">Preview (first 5 rows after transformation)</h3>
+            <div class="overflow-x-auto border rounded-md">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <template x-for="col in getPreviewTableColumns()" :key="col">
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-text="col"></th>
+                            </template>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="(row, idx) in getTransformedPreviewRows()" :key="idx">
+                            <tr>
+                                <template x-for="col in getPreviewTableColumns()" :key="col">
+                                    <td class="px-3 py-2 text-sm text-gray-900 max-w-xs truncate" x-text="row[col] || '-'"></td>
+                                </template>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="mb-6 grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="bg-gray-50 rounded-md p-3 text-center">
+                <div class="text-2xl font-semibold text-gray-900" x-text="preview?.total_rows || 0"></div>
+                <div class="text-xs text-gray-500">Total Rows</div>
+            </div>
+            <div class="bg-green-50 rounded-md p-3 text-center">
+                <div class="text-2xl font-semibold text-green-600" x-text="getMappedColumnCount()"></div>
+                <div class="text-xs text-gray-500">Mapped Columns</div>
+            </div>
+            <div class="bg-blue-50 rounded-md p-3 text-center">
+                <div class="text-2xl font-semibold text-blue-600" x-text="getMetadataColumnCount()"></div>
+                <div class="text-xs text-gray-500">Metadata Columns</div>
+            </div>
+            <div class="bg-purple-50 rounded-md p-3 text-center">
+                <div class="text-2xl font-semibold text-purple-600" x-text="fieldGenerators.filter(g => g.target_field && g.pattern).length"></div>
+                <div class="text-xs text-gray-500">Generated Fields</div>
+            </div>
+            <div class="bg-amber-50 rounded-md p-3 text-center" x-show="getCoalesceFields().length > 0">
+                <div class="text-2xl font-semibold text-amber-600" x-text="getCoalesceFields().length"></div>
+                <div class="text-xs text-gray-500">Coalesce Fields</div>
+            </div>
+        </div>
+
+        <!-- Coalesce Info -->
+        <template x-if="hasCoalesceMappings()">
+            <div class="mb-6 bg-amber-50 border border-amber-200 rounded-md p-4">
+                <div class="flex">
+                    <svg class="h-5 w-5 text-amber-400 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm">
+                        <p class="font-medium text-amber-800">Coalesce mapping detected</p>
+                        <p class="text-amber-700 mt-1">
+                            Multiple columns map to the same field: <strong x-text="getCoalesceFields().join(', ')"></strong>.
+                            The first non-empty value will be used. If a row has values in multiple columns, it will be flagged for review.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Import Options -->
+        <div class="mb-6 border rounded-md p-4">
+            <h3 class="text-sm font-medium text-gray-700 mb-3">Import Options</h3>
+            <div class="space-y-3">
+                <label class="flex items-center">
+                    <input type="checkbox" x-model="importOptions.fetchMetadata"
+                           class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
+                    <span class="ml-2 text-sm text-gray-700">Fetch metadata from BDSC for repository stocks</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-between">
+            <button @click="goToStep(2)"
+                    class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <svg class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+            </button>
+            <button @click="executeImport()"
+                    :disabled="importLoading"
+                    class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span x-show="importLoading" class="mr-2">
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </span>
+                <span x-text="importLoading ? 'Importing...' : 'Import ' + (preview?.total_rows || 0) + ' Stocks'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 4: Resolve Conflicts -->
+    <div x-show="currentStep === 4" x-cloak class="space-y-6">
+        <!-- Phase 1 Summary -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Review & Resolve</h2>
+
+            <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-4" x-show="phase1Result?.imported_count > 0">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-sm text-green-800">
+                        <strong x-text="phase1Result?.imported_count"></strong> stocks imported successfully.
+                    </span>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-md p-4">
+                <div class="flex items-start">
+                    <svg class="h-5 w-5 text-amber-400 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm">
+                        <p class="font-medium text-amber-800">
+                            <span x-text="phase1Result?.conflicting_rows?.length || 0"></span> row(s) need your attention
+                        </p>
+                        <p class="text-amber-700 mt-1">
+                            Review each category below, then click "Import Resolved Rows" to complete.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px overflow-x-auto" aria-label="Conflict categories">
+                    <template x-for="(count, type) in phase1Result?.conflict_summary || {}" :key="type">
+                        <button @click="activeConflictTab = type"
+                                x-show="getRowsForType(type).length > 0"
+                                class="relative min-w-0 flex-1 overflow-hidden py-4 px-4 text-sm font-medium text-center border-b-2 focus:z-10 focus:outline-none whitespace-nowrap"
+                                :class="activeConflictTab === type
+                                    ? 'border-primary-500 text-primary-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+                            <span x-text="getConflictTypeLabel(type)"></span>
+                            <span class="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="getConflictTypeBadgeClass(type)">
+                                <span x-text="getRowsForType(type).length"></span>
+                            </span>
+                            <!-- Progress indicator -->
+                            <span x-show="getResolvedCountForType(type) === getRowsForType(type).length"
+                                  class="ml-1 text-green-500">✓</span>
+                        </button>
+                    </template>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+                <!-- Category-specific header and batch actions -->
+                <div class="mb-6">
+                    <!-- Repository Match Header -->
+                    <template x-if="activeConflictTab === 'potential_repository_match'">
+                        <div>
+                            <h3 class="text-base font-medium text-gray-900 mb-2">Potential Repository Matches</h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                These stocks have genotypes that match known repository stocks (BDSC, VDRC, etc.).
+                                You can convert them, keep as internal, or flag for later review.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <button @click="resolveAllConvertToRepository()"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-blue-100 text-blue-800 hover:bg-blue-200">
+                                    Convert all to repository
+                                </button>
+                                <button @click="resolveAllKeepInternal()"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">
+                                    Keep all as internal
+                                </button>
+                                <button @click="resolveAllFlagForAttention()"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200">
+                                    Flag all for attention
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Genotype Mismatch Header -->
+                    <template x-if="activeConflictTab === 'genotype_mismatch'">
+                        <div>
+                            <h3 class="text-base font-medium text-gray-900 mb-2">Genotype Mismatches</h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                These stocks have genotypes that differ from the official repository data.
+                                When using the repository genotype, you can preserve your original in the notes or metadata.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <button @click="resolveAllUseRepository('notes')"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-purple-100 text-purple-800 hover:bg-purple-200">
+                                    Use repository (save to notes)
+                                </button>
+                                <button @click="resolveAllUseRepository('metadata')"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-purple-100 text-purple-800 hover:bg-purple-200">
+                                    Use repository (save to metadata)
+                                </button>
+                                <button @click="resolveAllUseLocal()"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">
+                                    Keep file genotypes
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Coalesce Conflict Header -->
+                    <template x-if="activeConflictTab === 'coalesce_conflict'">
+                        <div>
+                            <h3 class="text-base font-medium text-gray-900 mb-2">Multiple Values</h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                These rows have multiple columns mapped to the same field with different values.
+                                Choose which value to use for each row.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <button @click="resolveAllUseFirst()"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200">
+                                    Use first value for all
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Duplicate/Error Header -->
+                    <template x-if="['duplicate_stock', 'missing_required', 'validation_error'].includes(activeConflictTab)">
+                        <div>
+                            <h3 class="text-base font-medium text-gray-900 mb-2" x-text="getConflictTypeLabel(activeConflictTab)"></h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                These rows have errors that cannot be automatically resolved.
+                                You can skip them or go back and fix the source data.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <button @click="skipAllForType(activeConflictTab)"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-red-100 text-red-800 hover:bg-red-200">
+                                    Skip all rows with this error
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Progress for current tab -->
+                    <div class="mt-4 flex items-center text-sm">
+                        <span class="text-gray-500">Progress:</span>
+                        <span class="ml-2 font-medium" x-text="getResolvedCountForType(activeConflictTab)"></span>
+                        <span class="text-gray-400 mx-1">/</span>
+                        <span class="font-medium" x-text="getRowsForType(activeConflictTab).length"></span>
+                        <span class="ml-2 text-gray-500">resolved</span>
+                    </div>
+                </div>
+
+                <!-- Conflict Cards for active tab -->
+                <div class="space-y-4">
+                    <template x-for="row in getRowsForType(activeConflictTab)" :key="row.row_index">
+                        <div class="border rounded-lg p-4"
+                             :class="isRowResolved(row.row_index) ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-medium text-gray-900">Row <span x-text="row.row_index"></span></span>
+                                    <span class="ml-2 text-sm text-gray-500" x-text="'— ' + (row.transformed_row?.stock_id || row.transformed_row?.genotype?.substring(0, 40) + '...' || 'No ID')"></span>
+                                </div>
+                                <div x-show="isRowResolved(row.row_index)" class="flex items-center text-green-600 text-sm">
+                                    <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span x-text="getResolution(row.row_index)?.action === 'skip' ? 'Skipped' : 'Resolved'"></span>
+                                </div>
+                            </div>
+
+                            <!-- Show current genotype for context -->
+                            <div class="mb-3 p-2 bg-gray-50 rounded text-xs font-mono text-gray-600 truncate"
+                                 x-show="row.transformed_row?.genotype"
+                                 x-text="row.transformed_row?.genotype"></div>
+
+                            <!-- Conflict Details -->
+                            <template x-for="conflict in row.conflicts.filter(c => c.conflict_type === activeConflictTab)" :key="conflict.field + '-' + row.row_index">
+                                <div class="mb-3 last:mb-0">
+                                    <!-- Coalesce Conflict -->
+                                    <template x-if="conflict.conflict_type === 'coalesce_conflict'">
+                                        <div>
+                                            <div class="text-sm text-gray-600 mb-2">
+                                                Choose value for <strong x-text="conflict.field"></strong>:
+                                            </div>
+                                            <div class="flex flex-wrap gap-2">
+                                                <template x-for="(value, colName) in conflict.values" :key="colName">
+                                                    <button @click="resolveConflict(row.row_index, conflict.field, value)"
+                                                            class="inline-flex items-center px-3 py-1.5 text-sm rounded-md border"
+                                                            :class="getResolution(row.row_index)?.field_values?.[conflict.field] === value
+                                                                ? 'bg-green-100 border-green-400 text-green-800'
+                                                                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'">
+                                                        <span class="font-medium mr-1" x-text="colName + ':'"></span>
+                                                        <span x-text="value"></span>
+                                                    </button>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Genotype Mismatch -->
+                                    <template x-if="conflict.conflict_type === 'genotype_mismatch'">
+                                        <div class="space-y-2">
+                                            <button @click="resolveConflict(row.row_index, 'genotype', conflict.values.local)"
+                                                    class="block w-full text-left px-3 py-2 text-sm rounded-md border"
+                                                    :class="getResolution(row.row_index)?.field_values?.genotype === conflict.values.local
+                                                        ? 'bg-green-100 border-green-400'
+                                                        : 'bg-white border-gray-300 hover:bg-gray-50'">
+                                                <span class="font-medium text-gray-700">Keep your file's genotype</span>
+                                            </button>
+                                            <button @click="useRepositoryGenotype(row.row_index, conflict.remote_value, conflict.values.local, 'notes')"
+                                                    class="block w-full text-left px-3 py-2 text-sm rounded-md border-2"
+                                                    :class="getResolution(row.row_index)?.field_values?.genotype === conflict.remote_value
+                                                        ? 'bg-green-100 border-green-400'
+                                                        : 'bg-purple-50 border-purple-300 hover:bg-purple-100'">
+                                                <span class="font-medium text-purple-700">Use repository genotype</span>
+                                                <span class="ml-2 text-xs text-purple-600">(save original to notes)</span>
+                                            </button>
+                                            <button @click="useRepositoryGenotype(row.row_index, conflict.remote_value, conflict.values.local, 'metadata')"
+                                                    class="block w-full text-left px-3 py-2 text-sm rounded-md border"
+                                                    :class="getResolution(row.row_index)?.field_values?._preserve_original === 'metadata'
+                                                        ? 'bg-green-100 border-green-400'
+                                                        : 'bg-white border-gray-300 hover:bg-gray-50'">
+                                                <span class="font-medium text-gray-700">Use repository genotype</span>
+                                                <span class="ml-2 text-xs text-gray-500">(save original to metadata field)</span>
+                                            </button>
+                                            <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
+                                                <div class="text-gray-500 mb-1">Your file:</div>
+                                                <div class="font-mono text-gray-700" x-text="conflict.values.local"></div>
+                                                <div class="text-gray-500 mt-2 mb-1">Repository:</div>
+                                                <div class="font-mono text-purple-700" x-text="conflict.remote_value"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Potential Repository Match -->
+                                    <template x-if="conflict.conflict_type === 'potential_repository_match'">
+                                        <div class="space-y-3" x-data="{ showComparison: false }">
+                                            <!-- Action buttons -->
+                                            <div class="flex gap-2">
+                                                <button @click="convertToRepositoryStock(row.row_index, conflict.values)"
+                                                        class="flex-1 text-left px-3 py-2 text-sm rounded-md border-2"
+                                                        :class="getResolution(row.row_index)?.field_values?.origin === 'repository'
+                                                            ? 'bg-green-100 border-green-400'
+                                                            : 'bg-blue-50 border-blue-300 hover:bg-blue-100'">
+                                                    <span class="font-medium text-blue-700">Convert to repository:</span>
+                                                    <span class="ml-1 text-xs" x-text="conflict.values.repository + ' #' + conflict.values.repository_stock_id"></span>
+                                                </button>
+                                                <button @click="keepAsNonRepository(row.row_index)"
+                                                        class="flex-1 text-left px-3 py-2 text-sm rounded-md border"
+                                                        :class="getResolution(row.row_index)?.field_values?.origin === 'internal' && !getResolution(row.row_index)?.field_values?._flagged
+                                                            ? 'bg-green-100 border-green-400'
+                                                            : 'bg-white border-gray-300 hover:bg-gray-50'">
+                                                    <span class="font-medium text-gray-700">Keep as internal</span>
+                                                </button>
+                                                <button @click="flagForAttention(row.row_index, conflict.values)"
+                                                        class="flex-1 text-left px-3 py-2 text-sm rounded-md border"
+                                                        :class="getResolution(row.row_index)?.field_values?._flagged
+                                                            ? 'bg-green-100 border-green-400'
+                                                            : 'bg-amber-50 border-amber-300 hover:bg-amber-100'">
+                                                    <span class="font-medium text-amber-700">Flag for attention</span>
+                                                </button>
+                                            </div>
+
+                                            <!-- Toggle comparison -->
+                                            <button @click="showComparison = !showComparison"
+                                                    class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                                                <svg class="h-4 w-4 mr-1 transition-transform" :class="{ 'rotate-90': showComparison }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                                <span x-text="showComparison ? 'Hide comparison' : 'Compare import vs repository data'"></span>
+                                            </button>
+
+                                            <!-- Collapsible comparison -->
+                                            <div x-show="showComparison" x-collapse class="border rounded-lg overflow-hidden">
+                                                <div class="grid grid-cols-2 divide-x">
+                                                    <!-- Import data -->
+                                                    <div class="p-3 bg-gray-50">
+                                                        <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Your Import Data</div>
+                                                        <dl class="space-y-2 text-xs">
+                                                            <div x-show="row.transformed_row?.stock_id">
+                                                                <dt class="text-gray-500">Stock ID</dt>
+                                                                <dd class="font-medium text-gray-900" x-text="row.transformed_row?.stock_id || '-'"></dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt class="text-gray-500">Genotype</dt>
+                                                                <dd class="font-mono text-gray-900 break-all" x-text="row.transformed_row?.genotype || '-'"></dd>
+                                                            </div>
+                                                            <div x-show="row.transformed_row?.notes">
+                                                                <dt class="text-gray-500">Notes</dt>
+                                                                <dd class="text-gray-900" x-text="row.transformed_row?.notes || '-'"></dd>
+                                                            </div>
+                                                            <div x-show="row.transformed_row?.tray_name">
+                                                                <dt class="text-gray-500">Tray</dt>
+                                                                <dd class="text-gray-900" x-text="row.transformed_row?.tray_name || '-'"></dd>
+                                                            </div>
+                                                            <div x-show="row.transformed_row?.position">
+                                                                <dt class="text-gray-500">Position</dt>
+                                                                <dd class="text-gray-900" x-text="row.transformed_row?.position || '-'"></dd>
+                                                            </div>
+                                                        </dl>
+                                                    </div>
+                                                    <!-- Repository data -->
+                                                    <div class="p-3 bg-blue-50">
+                                                        <div class="text-xs font-semibold text-blue-600 uppercase mb-2">
+                                                            <span x-text="conflict.values.repository"></span> #<span x-text="conflict.values.repository_stock_id"></span>
+                                                        </div>
+                                                        <dl class="space-y-2 text-xs">
+                                                            <div>
+                                                                <dt class="text-gray-500">Stock ID</dt>
+                                                                <dd class="font-medium text-blue-900" x-text="conflict.values.repository_stock_id"></dd>
+                                                            </div>
+                                                            <div>
+                                                                <dt class="text-gray-500">Genotype</dt>
+                                                                <dd class="font-mono text-blue-900 break-all" x-text="conflict.values.match_genotype || conflict.remote_value || '-'"></dd>
+                                                            </div>
+                                                        </dl>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Error types -->
+                                    <template x-if="['duplicate_stock', 'missing_required', 'validation_error'].includes(conflict.conflict_type)">
+                                        <div class="text-sm text-red-600 p-3 bg-red-50 rounded">
+                                            <span x-text="conflict.message"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Skip button -->
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <button @click="skipRow(row.row_index)"
+                                        class="text-sm text-gray-500 hover:text-gray-700"
+                                        :class="getResolution(row.row_index)?.action === 'skip' ? 'font-medium text-red-600' : ''">
+                                    <span x-text="getResolution(row.row_index)?.action === 'skip' ? 'Will skip this row' : 'Skip this row'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-600">
+                    <span x-text="unresolvedConflictCount()"></span> unresolved conflict(s)
+                    <span class="text-gray-400 ml-2">across all categories</span>
+                </div>
+                <div class="flex space-x-3">
+                    <button @click="currentStep = 3"
+                            class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                        Back
+                    </button>
+                    <button @click="executePhase2()"
+                            :disabled="phase2Loading || unresolvedConflictCount() > 0"
+                            class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span x-show="phase2Loading" class="mr-2">
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                        <span x-text="phase2Loading ? 'Importing...' : 'Import Resolved Rows'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Results (Step 5) -->
+    <div x-show="currentStep === 5 && importResult" x-cloak class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="ml-3 flex-1">
+                <h3 class="text-lg font-medium text-green-800">Import Complete</h3>
+                <p class="mt-1 text-sm text-gray-600" x-text="importResult?.message"></p>
+
+                <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-green-50 rounded-md p-3 text-center">
+                        <div class="text-2xl font-semibold text-green-600" x-text="importResult?.imported_count || 0"></div>
+                        <div class="text-xs text-gray-500">Stocks Imported</div>
+                    </div>
+                    <div class="bg-blue-50 rounded-md p-3 text-center" x-show="importResult?.trays_created?.length > 0">
+                        <div class="text-2xl font-semibold text-blue-600" x-text="importResult?.trays_created?.length || 0"></div>
+                        <div class="text-xs text-gray-500">Trays Created</div>
+                    </div>
+                    <div class="bg-purple-50 rounded-md p-3 text-center" x-show="importResult?.metadata_fetched > 0">
+                        <div class="text-2xl font-semibold text-purple-600" x-text="importResult?.metadata_fetched || 0"></div>
+                        <div class="text-xs text-gray-500">Metadata Fetched</div>
+                    </div>
+                </div>
+
+                <!-- Errors -->
+                <template x-if="importResult?.errors?.length > 0">
+                    <div class="mt-4 rounded-md bg-red-50 p-4">
+                        <h4 class="text-sm font-medium text-red-800">Some rows had errors:</h4>
+                        <ul class="mt-2 text-sm text-red-700 space-y-1">
+                            <template x-for="err in importResult?.errors?.slice(0, 10) || []" :key="err.row">
+                                <li>
+                                    <span class="font-medium">Row <span x-text="err.row"></span>:</span>
+                                    <span x-text="err.errors?.join(', ')"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
+                <div class="mt-4 flex space-x-3">
+                    <a href="/stocks" class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                        View Stocks
+                    </a>
+                    <button @click="resetWizard()" class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                        Import More
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function importWizard() {
+    return {
+        currentStep: 1,
+        dragover: false,
+        selectedFile: null,
+        previewLoading: false,
+        importLoading: false,
+        preview: null,
+        importResult: null,
+        columnMappings: {},
+        fieldGenerators: [],
+        showFormatHelp: false,
+        importOptions: {
+            fetchMetadata: true,
+        },
+        // Two-phase import state
+        phase1Result: null,
+        conflictResolutions: {},  // row_index -> { action, field_values }
+        phase2Loading: false,
+        activeConflictTab: null,  // Current conflict type tab
+
+        handleFileSelect(event) {
+            this.selectedFile = event.target.files[0];
+            this.preview = null;
+            this.importResult = null;
+            this.columnMappings = {};
+            this.fieldGenerators = [];
+        },
+
+        handleDrop(event) {
+            this.dragover = false;
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                this.selectedFile = files[0];
+                this.preview = null;
+                this.importResult = null;
+                this.columnMappings = {};
+                this.fieldGenerators = [];
+            }
+        },
+
+        clearFile() {
+            this.selectedFile = null;
+            this.preview = null;
+            this.columnMappings = {};
+            this.fieldGenerators = [];
+            document.getElementById('file-upload').value = '';
+        },
+
+        resetWizard() {
+            this.currentStep = 1;
+            this.selectedFile = null;
+            this.preview = null;
+            this.importResult = null;
+            this.columnMappings = {};
+            this.fieldGenerators = [];
+            this.importOptions = {
+                fetchMetadata: true,
+            };
+            this.phase1Result = null;
+            this.conflictResolutions = {};
+            this.phase2Loading = false;
+            this.activeConflictTab = null;
+            document.getElementById('file-upload').value = '';
+        },
+
+        goToStep(step) {
+            this.currentStep = step;
+        },
+
+        async analyzeFile() {
+            if (!this.selectedFile) return;
+
+            this.previewLoading = true;
+            this.preview = null;
+
+            const formData = new FormData();
+            formData.append('file', this.selectedFile);
+
+            try {
+                const response = await fetch('/api/imports/preview-v2', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    this.preview = result;
+                    this.initializeColumnMappings();
+                    this.currentStep = 2;
+                } else {
+                    document.getElementById('import-message').innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${result.detail || 'Failed to analyze file'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('import-message').innerHTML = `
+                    <div class="mb-4 rounded-md bg-red-50 p-4">
+                        <p class="text-sm text-red-700">An error occurred while analyzing the file.</p>
+                    </div>`;
+            } finally {
+                this.previewLoading = false;
+            }
+        },
+
+        initializeColumnMappings() {
+            this.columnMappings = {};
+            for (const col of this.preview?.columns || []) {
+                this.columnMappings[col.name] = {
+                    column_name: col.name,
+                    target_field: col.auto_detected || '',
+                    custom_key: '',  // User-defined metadata key (when target_field === 'custom')
+                };
+            }
+        },
+
+        handleMappingChange(colName) {
+            // When "custom" is selected, initialize custom_key with sanitized column name
+            if (this.columnMappings[colName]?.target_field === 'custom') {
+                if (!this.columnMappings[colName].custom_key) {
+                    this.columnMappings[colName].custom_key = colName.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
+                }
+            }
+        },
+
+        getMetadataKey(colName) {
+            // Return custom_key if set, otherwise auto-generate from column name
+            const mapping = this.columnMappings[colName];
+            if (mapping?.custom_key) {
+                return mapping.custom_key;
+            }
+            return colName.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
+        },
+
+        isFieldUsed(field, excludeCol) {
+            // Check if a field is already used by another column
+            // Now returns false to allow coalesce mapping (multiple columns → same field)
+            return false;
+        },
+
+        getFieldUsageCount(field) {
+            // Count how many columns map to this field
+            let count = 0;
+            for (const mapping of Object.values(this.columnMappings)) {
+                if (mapping.target_field === field) {
+                    count++;
+                }
+            }
+            return count;
+        },
+
+        getColumnsForField(field) {
+            // Get list of column names mapping to this field
+            const columns = [];
+            for (const [colName, mapping] of Object.entries(this.columnMappings)) {
+                if (mapping.target_field === field) {
+                    columns.push(colName);
+                }
+            }
+            return columns;
+        },
+
+        hasCoalesceMappings() {
+            // Check if any field has multiple columns mapped (coalesce)
+            // Exclude 'custom' since each custom column gets its own metadata key
+            const fieldCounts = {};
+            for (const mapping of Object.values(this.columnMappings)) {
+                if (mapping.target_field && mapping.target_field !== 'custom') {
+                    fieldCounts[mapping.target_field] = (fieldCounts[mapping.target_field] || 0) + 1;
+                }
+            }
+            return Object.values(fieldCounts).some(count => count > 1);
+        },
+
+        getCoalesceFields() {
+            // Get list of fields that have coalesce mapping (multiple columns)
+            // Exclude 'custom' since each custom column gets its own metadata key
+            const fieldCounts = {};
+            for (const mapping of Object.values(this.columnMappings)) {
+                if (mapping.target_field && mapping.target_field !== 'custom') {
+                    fieldCounts[mapping.target_field] = (fieldCounts[mapping.target_field] || 0) + 1;
+                }
+            }
+            return Object.entries(fieldCounts)
+                .filter(([_, count]) => count > 1)
+                .map(([field, _]) => field);
+        },
+
+        // Human-readable labels for fields
+        fieldLabels: {
+            stock_id: 'Stock ID (auto-generated if empty)',
+            genotype: 'Genotype',
+            origin: 'Origin (internal/external/repository)',
+            repository: 'Repository (BDSC, VDRC, etc.)',
+            repository_stock_id: 'Repository Stock Number',
+            external_source: 'External Source (lab name)',
+            notes: 'Notes',
+            tags: 'Tags (comma or semicolon-separated)',
+            tray_name: 'Tray/Location',
+            position: 'Position in Tray',
+            visibility: 'Visibility',
+            custom: 'Custom (metadata)',
+        },
+
+        getFieldLabel(field) {
+            return this.fieldLabels[field] || field;
+        },
+
+        getOptionalFields() {
+            // All fields except the "one of" required fields
+            const requiredOneOf = this.preview?.required_fields || ['repository_stock_id', 'genotype'];
+            return (this.preview?.available_fields || []).filter(f => !requiredOneOf.includes(f));
+        },
+
+        isRequiredFieldMapped(field) {
+            // Check if mapped by column
+            for (const mapping of Object.values(this.columnMappings)) {
+                if (mapping.target_field === field) {
+                    return true;
+                }
+            }
+            // Check if generated
+            for (const gen of this.fieldGenerators) {
+                if (gen.target_field === field && gen.pattern) {
+                    return true;
+                }
+            }
+            return false;
+        },
+
+        // Check if at least one of the required-one-of fields is mapped
+        hasAnyRequiredFieldMapped() {
+            const requiredOneOf = this.preview?.required_fields || ['repository_stock_id', 'genotype'];
+            return requiredOneOf.some(f => this.isRequiredFieldMapped(f));
+        },
+
+        addFieldGenerator() {
+            this.fieldGenerators.push({
+                target_field: '',
+                pattern: '',
+            });
+        },
+
+        removeFieldGenerator(index) {
+            this.fieldGenerators.splice(index, 1);
+        },
+
+        previewGenerator(gen) {
+            if (!gen.pattern || !this.preview?.sample_rows?.length) return '';
+            const row = this.preview.sample_rows[0];
+            let value = gen.pattern;
+            const matches = gen.pattern.match(/\{([^}]+)\}/g) || [];
+            for (const match of matches) {
+                const colName = match.slice(1, -1);
+                const colValue = row[colName] || '';
+                value = value.replace(match, colValue);
+            }
+            return value;
+        },
+
+        getMissingRequiredFields() {
+            // New logic: need at least ONE of repository_stock_id or genotype
+            const mapped = new Set();
+            for (const mapping of Object.values(this.columnMappings)) {
+                if (mapping.target_field) {
+                    mapped.add(mapping.target_field);
+                }
+            }
+            for (const gen of this.fieldGenerators) {
+                if (gen.target_field && gen.pattern) {
+                    mapped.add(gen.target_field);
+                }
+            }
+
+            // Check if at least one of the required fields is mapped
+            const requiredOneOf = this.preview?.required_fields || ['repository_stock_id', 'genotype'];
+            const hasRequired = requiredOneOf.some(f => mapped.has(f));
+
+            if (hasRequired) {
+                return []; // No missing fields
+            } else {
+                return requiredOneOf; // Return what's needed
+            }
+        },
+
+        canProceedToPreview() {
+            // Can proceed if at least one of genotype or repository_stock_id is mapped
+            const mapped = new Set();
+            for (const mapping of Object.values(this.columnMappings)) {
+                if (mapping.target_field) {
+                    mapped.add(mapping.target_field);
+                }
+            }
+            for (const gen of this.fieldGenerators) {
+                if (gen.target_field && gen.pattern) {
+                    mapped.add(gen.target_field);
+                }
+            }
+
+            const requiredOneOf = this.preview?.required_fields || ['repository_stock_id', 'genotype'];
+            return requiredOneOf.some(f => mapped.has(f));
+        },
+
+        getMappedColumnCount() {
+            let count = 0;
+            for (const mapping of Object.values(this.columnMappings)) {
+                // Count fields mapped to actual database columns (not 'custom' metadata)
+                if (mapping.target_field && mapping.target_field !== 'custom') {
+                    count++;
+                }
+            }
+            return count;
+        },
+
+        getMetadataColumnCount() {
+            let count = 0;
+            for (const mapping of Object.values(this.columnMappings)) {
+                // Count fields mapped to 'custom' (saved as metadata)
+                if (mapping.target_field === 'custom') {
+                    count++;
+                }
+            }
+            return count;
+        },
+
+        getPreviewTableColumns() {
+            const cols = [];
+            // Add mapped fields (exclude 'custom' which goes to metadata)
+            for (const mapping of Object.values(this.columnMappings)) {
+                if (mapping.target_field && mapping.target_field !== 'custom') {
+                    if (!cols.includes(mapping.target_field)) {
+                        cols.push(mapping.target_field);
+                    }
+                }
+            }
+            // Add generated fields
+            for (const gen of this.fieldGenerators) {
+                if (gen.target_field && gen.pattern && !cols.includes(gen.target_field)) {
+                    cols.push(gen.target_field);
+                }
+            }
+            // Sort to put required fields first
+            const priority = this.preview?.required_fields || [];
+            cols.sort((a, b) => {
+                const aIdx = priority.indexOf(a);
+                const bIdx = priority.indexOf(b);
+                if (aIdx === -1 && bIdx === -1) return 0;
+                if (aIdx === -1) return 1;
+                if (bIdx === -1) return -1;
+                return aIdx - bIdx;
+            });
+            return cols;
+        },
+
+        getTransformedPreviewRows() {
+            const rows = [];
+            for (const rawRow of (this.preview?.sample_rows || []).slice(0, 5)) {
+                const row = {};
+
+                // Apply column mappings (exclude 'custom' which goes to metadata)
+                for (const [colName, mapping] of Object.entries(this.columnMappings)) {
+                    if (mapping.target_field && mapping.target_field !== 'custom') {
+                        row[mapping.target_field] = rawRow[colName];
+                    }
+                }
+
+                // Apply field generators
+                for (const gen of this.fieldGenerators) {
+                    if (gen.target_field && gen.pattern) {
+                        let value = gen.pattern;
+                        const matches = gen.pattern.match(/\{([^}]+)\}/g) || [];
+                        for (const match of matches) {
+                            const colName = match.slice(1, -1);
+                            const colValue = rawRow[colName] || '';
+                            value = value.replace(match, colValue);
+                        }
+                        row[gen.target_field] = value;
+                    }
+                }
+
+                rows.push(row);
+            }
+            return rows;
+        },
+
+        async executeImport() {
+            if (!this.selectedFile) return;
+
+            this.importLoading = true;
+            this.phase1Result = null;
+            this.conflictResolutions = {};
+
+            // Build mappings list
+            const mappingsList = [];
+            for (const [colName, mapping] of Object.entries(this.columnMappings)) {
+                if (mapping.target_field) {
+                    const mappingObj = {
+                        column_name: colName,
+                        target_field: mapping.target_field,
+                    };
+                    // Include custom_key if set for metadata columns
+                    if (mapping.target_field === 'custom' && mapping.custom_key) {
+                        mappingObj.custom_key = mapping.custom_key;
+                    }
+                    mappingsList.push(mappingObj);
+                }
+            }
+
+            // Build generators list
+            const generatorsList = this.fieldGenerators.filter(g => g.target_field && g.pattern);
+
+            const requestBody = {
+                column_mappings: mappingsList,
+                field_generators: generatorsList,
+                config: {
+                    fetch_metadata: this.importOptions.fetchMetadata,
+                    auto_create_trays: true,
+                },
+            };
+
+            const formData = new FormData();
+            formData.append('file', this.selectedFile);
+            formData.append('mappings_json', JSON.stringify(requestBody));
+
+            try {
+                // Use phase 1 endpoint for two-phase import
+                const response = await fetch('/api/imports/execute-v2-phase1', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    this.phase1Result = result;
+
+                    if (result.conflicting_rows && result.conflicting_rows.length > 0) {
+                        // There are conflicts - go to step 4 for resolution
+                        this.currentStep = 4;
+                        // Set active tab to first conflict type that has rows (by primary conflict)
+                        const conflictTypes = Object.keys(result.conflict_summary || {});
+                        this.activeConflictTab = conflictTypes.find(type => this.getRowsForType(type).length > 0) || conflictTypes[0] || null;
+                        document.getElementById('import-message').innerHTML = `
+                            <div class="mb-4 rounded-md bg-amber-50 p-4">
+                                <p class="text-sm text-amber-700">
+                                    Imported ${result.imported_count} stocks.
+                                    ${result.conflicting_rows.length} row(s) need your attention.
+                                </p>
+                            </div>`;
+                    } else {
+                        // No conflicts - import complete
+                        this.importResult = {
+                            message: `Successfully imported ${result.imported_count} stocks`,
+                            imported_count: result.imported_count,
+                            stock_ids: result.imported_stock_ids,
+                            trays_created: result.trays_created,
+                            metadata_fetched: result.metadata_fetched,
+                            errors: [],
+                        };
+                        this.currentStep = 5; // Final results
+                        document.getElementById('import-message').innerHTML = `
+                            <div class="mb-4 rounded-md bg-green-50 p-4">
+                                <p class="text-sm text-green-700">Successfully imported ${result.imported_count} stocks!</p>
+                            </div>`;
+                    }
+                } else {
+                    let errorMsg = result.detail;
+                    if (typeof result.detail === 'object') {
+                        errorMsg = result.detail.message || JSON.stringify(result.detail);
+                    }
+                    document.getElementById('import-message').innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${errorMsg || 'Import failed'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('import-message').innerHTML = `
+                    <div class="mb-4 rounded-md bg-red-50 p-4">
+                        <p class="text-sm text-red-700">An error occurred during import.</p>
+                    </div>`;
+            } finally {
+                this.importLoading = false;
+            }
+        },
+
+        // --- Conflict Resolution Functions ---
+
+        getConflictTypeLabel(type) {
+            const labels = {
+                'coalesce_conflict': 'Multiple Values',
+                'genotype_mismatch': 'Genotype Mismatch',
+                'duplicate_stock': 'Duplicate Stock',
+                'missing_required': 'Missing Required',
+                'validation_error': 'Validation Error',
+                'llm_flagged': 'AI Flagged',
+                'potential_repository_match': 'Repository Match Found',
+            };
+            return labels[type] || type;
+        },
+
+        getConflictTypeBadgeClass(type) {
+            const classes = {
+                'coalesce_conflict': 'bg-amber-100 text-amber-800',
+                'genotype_mismatch': 'bg-purple-100 text-purple-800',
+                'duplicate_stock': 'bg-red-100 text-red-800',
+                'missing_required': 'bg-red-100 text-red-800',
+                'validation_error': 'bg-red-100 text-red-800',
+                'llm_flagged': 'bg-blue-100 text-blue-800',
+                'potential_repository_match': 'bg-blue-100 text-blue-800',
+            };
+            return classes[type] || 'bg-gray-100 text-gray-800';
+        },
+
+        resolveConflict(rowIndex, field, value) {
+            if (!this.conflictResolutions[rowIndex]) {
+                this.conflictResolutions[rowIndex] = { action: 'use_value', field_values: {} };
+            }
+            this.conflictResolutions[rowIndex].action = 'use_value';
+            this.conflictResolutions[rowIndex].field_values[field] = value;
+        },
+
+        skipRow(rowIndex) {
+            this.conflictResolutions[rowIndex] = { action: 'skip', field_values: {} };
+        },
+
+        isRowResolved(rowIndex) {
+            return !!this.conflictResolutions[rowIndex];
+        },
+
+        getResolution(rowIndex) {
+            return this.conflictResolutions[rowIndex];
+        },
+
+        unresolvedConflictCount() {
+            if (!this.phase1Result?.conflicting_rows) return 0;
+            return this.phase1Result.conflicting_rows.filter(
+                row => !this.conflictResolutions[row.row_index]
+            ).length;
+        },
+
+        resolveAllSkip() {
+            for (const row of this.phase1Result?.conflicting_rows || []) {
+                if (!this.conflictResolutions[row.row_index]) {
+                    this.skipRow(row.row_index);
+                }
+            }
+        },
+
+        useRepositoryGenotype(rowIndex, repoGenotype, originalGenotype, preserveIn) {
+            // Use repository genotype and optionally preserve original
+            if (!this.conflictResolutions[rowIndex]) {
+                this.conflictResolutions[rowIndex] = { action: 'use_value', field_values: {} };
+            }
+            this.conflictResolutions[rowIndex].action = 'use_value';
+            this.conflictResolutions[rowIndex].field_values.genotype = repoGenotype;
+            this.conflictResolutions[rowIndex].field_values._preserve_original = preserveIn;
+
+            if (preserveIn === 'notes') {
+                // Append to notes field
+                const existingNotes = this.conflictResolutions[rowIndex].field_values.notes || '';
+                const notePrefix = existingNotes ? existingNotes + '\n\n' : '';
+                this.conflictResolutions[rowIndex].field_values.notes =
+                    notePrefix + 'Original genotype from import: ' + originalGenotype;
+            } else if (preserveIn === 'metadata') {
+                // Store in metadata (will be handled in phase 2)
+                this.conflictResolutions[rowIndex].field_values._original_genotype = originalGenotype;
+            }
+        },
+
+        resolveAllUseRepository(preserveIn = 'notes') {
+            // Use repository genotype for all genotype mismatch conflicts
+            for (const row of this.phase1Result?.conflicting_rows || []) {
+                for (const conflict of row.conflicts) {
+                    if (conflict.conflict_type === 'genotype_mismatch' && conflict.remote_value) {
+                        this.useRepositoryGenotype(row.row_index, conflict.remote_value, conflict.values.local, preserveIn);
+                    }
+                }
+            }
+        },
+
+        convertToRepositoryStock(rowIndex, matchValues) {
+            // Convert a non-repository stock to a repository stock
+            if (!this.conflictResolutions[rowIndex]) {
+                this.conflictResolutions[rowIndex] = { action: 'use_value', field_values: {} };
+            }
+            this.conflictResolutions[rowIndex].action = 'use_value';
+            this.conflictResolutions[rowIndex].field_values.origin = 'repository';
+            this.conflictResolutions[rowIndex].field_values.repository = matchValues.repository.toLowerCase();
+            this.conflictResolutions[rowIndex].field_values.repository_stock_id = matchValues.repository_stock_id;
+            // Use the repository genotype if available
+            if (matchValues.match_genotype) {
+                this.conflictResolutions[rowIndex].field_values.genotype = matchValues.match_genotype;
+            }
+        },
+
+        keepAsNonRepository(rowIndex) {
+            // Keep the stock as internal (non-repository)
+            if (!this.conflictResolutions[rowIndex]) {
+                this.conflictResolutions[rowIndex] = { action: 'use_value', field_values: {} };
+            }
+            this.conflictResolutions[rowIndex].action = 'use_value';
+            this.conflictResolutions[rowIndex].field_values.origin = 'internal';
+            this.conflictResolutions[rowIndex].field_values._flagged = false;
+        },
+
+        flagForAttention(rowIndex, matchValues) {
+            // Keep as internal but flag for later review
+            if (!this.conflictResolutions[rowIndex]) {
+                this.conflictResolutions[rowIndex] = { action: 'use_value', field_values: {} };
+            }
+            this.conflictResolutions[rowIndex].action = 'use_value';
+            this.conflictResolutions[rowIndex].field_values.origin = 'internal';
+            this.conflictResolutions[rowIndex].field_values._flagged = true;
+            // Add note about potential match
+            this.conflictResolutions[rowIndex].field_values._flag_note =
+                `NEEDS REVIEW: Potential match found - ${matchValues.repository} #${matchValues.repository_stock_id}`;
+            // Add tag for filtering
+            this.conflictResolutions[rowIndex].field_values._flag_tag = 'needs-review';
+        },
+
+        resolveAllConvertToRepository() {
+            // Convert all potential repository matches to repository stocks
+            for (const row of this.phase1Result?.conflicting_rows || []) {
+                for (const conflict of row.conflicts) {
+                    if (conflict.conflict_type === 'potential_repository_match' && conflict.values) {
+                        this.convertToRepositoryStock(row.row_index, conflict.values);
+                    }
+                }
+            }
+        },
+
+        resolveAllKeepInternal() {
+            // Keep all potential repository matches as internal stocks
+            for (const row of this.phase1Result?.conflicting_rows || []) {
+                for (const conflict of row.conflicts) {
+                    if (conflict.conflict_type === 'potential_repository_match') {
+                        this.keepAsNonRepository(row.row_index);
+                    }
+                }
+            }
+        },
+
+        resolveAllFlagForAttention() {
+            // Flag all potential repository matches for later review
+            for (const row of this.phase1Result?.conflicting_rows || []) {
+                for (const conflict of row.conflicts) {
+                    if (conflict.conflict_type === 'potential_repository_match' && conflict.values) {
+                        this.flagForAttention(row.row_index, conflict.values);
+                    }
+                }
+            }
+        },
+
+        resolveAllUseLocal() {
+            // Use local genotypes for all genotype mismatch conflicts
+            for (const row of this.phase1Result?.conflicting_rows || []) {
+                for (const conflict of row.conflicts) {
+                    if (conflict.conflict_type === 'genotype_mismatch' && conflict.values?.local) {
+                        this.resolveConflict(row.row_index, 'genotype', conflict.values.local);
+                    }
+                }
+            }
+        },
+
+        skipAllForType(conflictType) {
+            // Skip all rows where the PRIMARY conflict matches this type
+            for (const row of this.getRowsForType(conflictType)) {
+                this.skipRow(row.row_index);
+            }
+        },
+
+        getRowsForType(conflictType) {
+            // Get rows where the PRIMARY conflict (first one) matches this type
+            // This ensures each row only appears in ONE tab
+            if (!this.phase1Result?.conflicting_rows) return [];
+            return this.phase1Result.conflicting_rows.filter(row =>
+                row.conflicts.length > 0 && row.conflicts[0].conflict_type === conflictType
+            );
+        },
+
+        getResolvedCountForType(conflictType) {
+            // Count how many rows with this conflict type have been resolved
+            const rows = this.getRowsForType(conflictType);
+            return rows.filter(row => this.isRowResolved(row.row_index)).length;
+        },
+
+        resolveAllUseFirst() {
+            for (const row of this.phase1Result?.conflicting_rows || []) {
+                if (!this.conflictResolutions[row.row_index]) {
+                    for (const conflict of row.conflicts) {
+                        if (conflict.conflict_type === 'coalesce_conflict') {
+                            const firstValue = Object.values(conflict.values)[0];
+                            this.resolveConflict(row.row_index, conflict.field, firstValue);
+                        }
+                    }
+                }
+            }
+        },
+
+        async executePhase2() {
+            if (!this.phase1Result?.session_id) return;
+
+            this.phase2Loading = true;
+
+            // Build resolutions list
+            const resolutionsList = [];
+            for (const [rowIndex, resolution] of Object.entries(this.conflictResolutions)) {
+                resolutionsList.push({
+                    row_index: parseInt(rowIndex),
+                    action: resolution.action,
+                    field_values: resolution.field_values || {},
+                });
+            }
+
+            const requestBody = {
+                session_id: this.phase1Result.session_id,
+                resolutions: resolutionsList,
+            };
+
+            const formData = new FormData();
+            formData.append('request_json', JSON.stringify(requestBody));
+
+            try {
+                const response = await fetch('/api/imports/execute-v2-phase2', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Combine phase 1 and phase 2 results
+                    this.importResult = {
+                        message: result.message,
+                        imported_count: (this.phase1Result?.imported_count || 0) + result.imported_count,
+                        stock_ids: [...(this.phase1Result?.imported_stock_ids || []), ...result.stock_ids],
+                        trays_created: [...(this.phase1Result?.trays_created || []), ...result.trays_created],
+                        metadata_fetched: (this.phase1Result?.metadata_fetched || 0) + result.metadata_fetched,
+                        errors: result.errors,
+                    };
+                    this.currentStep = 5; // Final results
+                    document.getElementById('import-message').innerHTML = `
+                        <div class="mb-4 rounded-md bg-green-50 p-4">
+                            <p class="text-sm text-green-700">${result.message}</p>
+                        </div>`;
+                } else {
+                    let errorMsg = result.detail;
+                    if (typeof result.detail === 'object') {
+                        errorMsg = result.detail.message || JSON.stringify(result.detail);
+                    }
+                    document.getElementById('import-message').innerHTML = `
+                        <div class="mb-4 rounded-md bg-red-50 p-4">
+                            <p class="text-sm text-red-700">${errorMsg || 'Phase 2 import failed'}</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('import-message').innerHTML = `
+                    <div class="mb-4 rounded-md bg-red-50 p-4">
+                        <p class="text-sm text-red-700">An error occurred during phase 2 import.</p>
+                    </div>`;
+            } finally {
+                this.phase2Loading = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

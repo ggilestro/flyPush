@@ -1,0 +1,196 @@
+<!-- Sidebar navigation content -->
+<nav class="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+    <ul class="space-y-1">
+        <!-- Dashboard -->
+        <li>
+            <a href="/"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if request.path == '/' %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if request.path == '/' %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+            </a>
+        </li>
+
+        <!-- Stocks -->
+        <li>
+            <a href="/stocks"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/stocks' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if '/stocks' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Stocks
+            </a>
+        </li>
+
+        <!-- Crosses -->
+        <li>
+            <a href="/crosses"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/crosses' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if '/crosses' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Crosses
+            </a>
+        </li>
+
+        <!-- Labels -->
+        <li>
+            <a href="/labels"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/labels' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if '/labels' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Labels
+            </a>
+        </li>
+
+        <!-- Trays -->
+        <li>
+            <a href="/trays"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/trays' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if '/trays' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                Trays
+            </a>
+        </li>
+
+        <!-- Tags -->
+        <li>
+            <a href="/tags"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/tags' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if '/tags' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                Tags
+            </a>
+        </li>
+    </ul>
+
+    <!-- Exchange Section -->
+    <div class="my-4 border-t border-gray-200"></div>
+    <p class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Exchange</p>
+    <ul class="space-y-1">
+        <!-- Browse Public Stocks -->
+        <li>
+            <a href="/exchange"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if request.path == '/exchange' %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if request.path == '/exchange' %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                Browse Stocks
+            </a>
+        </li>
+
+        <!-- My Requests -->
+        <li>
+            <a href="/exchange/requests"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/exchange/requests' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if '/exchange/requests' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                My Requests
+            </a>
+        </li>
+    </ul>
+
+    <!-- Import Section -->
+    <div class="my-4 border-t border-gray-200"></div>
+    <div x-data="{ importOpen: {% if '/import' in request.path or '/stocks/import' in request.path %}true{% else %}false{% endif %} }">
+        <!-- Import Header (collapsible) -->
+        <button @click="importOpen = !importOpen"
+                class="w-full group flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium {% if '/import' in request.path or '/stocks/import' in request.path %}text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+            <div class="flex items-center gap-x-3">
+                <svg class="h-5 w-5 {% if '/import' in request.path or '/stocks/import' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import
+            </div>
+            <svg class="h-4 w-4 text-gray-400 transition-transform" :class="{ 'rotate-90': importOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+
+        <!-- Import Sub-items -->
+        <ul x-show="importOpen"
+            x-transition:enter="transition ease-out duration-100"
+            x-transition:enter-start="opacity-0 -translate-y-1"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-75"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 -translate-y-1"
+            class="mt-1 space-y-1 pl-4">
+            <!-- From CSV/Excel -->
+            <li>
+                <a href="/stocks/import"
+                   class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if request.path == '/stocks/import' %}bg-primary-50 text-primary-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                    <svg class="h-4 w-4 {% if request.path == '/stocks/import' %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    From CSV/Excel
+                </a>
+            </li>
+
+            <!-- From FlyBase (BDSC, VDRC, Kyoto, etc.) -->
+            <li>
+                <a href="/stocks/import-bdsc"
+                   class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/stocks/import-bdsc' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                    <svg class="h-4 w-4 {% if '/stocks/import-bdsc' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                    From FlyBase
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Separator -->
+    <div class="my-4 border-t border-gray-200"></div>
+
+    <ul class="space-y-1">
+        <!-- Settings -->
+        <li>
+            <a href="/settings"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/settings' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if '/settings' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+            </a>
+        </li>
+
+        {% if current_user and current_user.role.value == 'admin' %}
+        <!-- Admin -->
+        <li>
+            <a href="/admin"
+               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/admin' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                <svg class="h-5 w-5 {% if '/admin' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Admin
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+
+    <!-- Tenant info at bottom -->
+    <div class="mt-auto pt-4 border-t border-gray-200">
+        <div class="px-3 py-2">
+            {% if current_user and current_user.tenant %}
+                {% if current_user.tenant.organization %}
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Organization</p>
+                <p class="text-sm font-medium text-gray-900">{{ current_user.tenant.organization.name }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ current_user.tenant.name }}</p>
+                {% else %}
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Lab</p>
+                <p class="text-sm font-medium text-gray-900">{{ current_user.tenant.name }}</p>
+                {% endif %}
+            {% else %}
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Lab</p>
+            <p class="mt-1 text-sm font-medium text-gray-900">My Lab</p>
+            {% endif %}
+        </div>
+    </div>
+</nav>
