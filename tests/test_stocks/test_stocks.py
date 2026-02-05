@@ -14,8 +14,6 @@ def test_stock(db: Session, test_tenant: Tenant, test_user: User) -> Stock:
         tenant_id=test_tenant.id,
         stock_id="BL-1234",
         genotype="w[1118]; P{GAL4-elav.L}3",
-        source="Bloomington",
-        legacy_location="Shelf A-1",
         notes="Test stock",
         created_by_id=test_user.id,
         modified_by_id=test_user.id,
@@ -89,7 +87,6 @@ class TestCreateStock:
             json={
                 "stock_id": "NEW-001",
                 "genotype": "w[*]; UAS-GFP",
-                "source": "Lab made",
                 "notes": "New stock",
             },
         )
@@ -152,14 +149,14 @@ class TestUpdateStock:
         response = authenticated_client.put(
             f"/api/stocks/{test_stock.id}",
             json={
-                "source": "New Source",
+                "external_source": "Another Lab",
                 "notes": "Updated notes",
             },
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["source"] == "New Source"
+        assert data["external_source"] == "Another Lab"
         assert data["notes"] == "Updated notes"
 
 

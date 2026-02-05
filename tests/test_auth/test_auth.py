@@ -27,8 +27,8 @@ class TestRegister:
             print(f"Response: {response.json()}")
         assert response.status_code == 201
         data = response.json()
-        assert "token" in data
-        assert data["token"]["access_token"] is not None
+        # Token is None until email is verified
+        assert data["token"] is None
         assert data["pending_approval"] is False
 
         # Verify tenant was created with slug including PI name
@@ -37,11 +37,12 @@ class TestRegister:
         assert tenant.name == "Harvard"
         assert tenant.invitation_token is not None
 
-        # Verify user was created as admin and approved
+        # Verify user was created as admin and approved (but not email verified)
         user = db.query(User).filter(User.email == "john@harvard.edu").first()
         assert user is not None
         assert user.role.value == "admin"
         assert user.status == UserStatus.APPROVED
+        assert user.is_email_verified is False
 
     def test_register_multiple_pis_same_org(self, client: TestClient, db: Session):
         """Test multiple PIs from same organization can each create their own lab."""
@@ -148,12 +149,14 @@ class TestRegister:
         assert response.status_code == 201
         data = response.json()
         assert data["pending_approval"] is False
-        assert data["token"] is not None
+        # Token is None until email is verified
+        assert data["token"] is None
 
-        # Verify user is approved
+        # Verify user is approved but not email verified
         user = db.query(User).filter(User.email == "jane.invited@example.com").first()
         assert user is not None
         assert user.status == UserStatus.APPROVED
+        assert user.is_email_verified is False
 
     def test_register_password_mismatch(self, client: TestClient):
         """Test registration fails when passwords don't match."""

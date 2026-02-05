@@ -96,6 +96,7 @@ def test_user(db: Session, test_tenant: Tenant) -> User:
         role=UserRole.USER,
         status=UserStatus.APPROVED,
         is_active=True,
+        is_email_verified=True,
     )
     db.add(user)
     db.commit()
@@ -115,6 +116,7 @@ def test_admin(db: Session, test_tenant: Tenant) -> User:
         role=UserRole.ADMIN,
         status=UserStatus.APPROVED,
         is_active=True,
+        is_email_verified=True,
     )
     db.add(admin)
     db.commit()

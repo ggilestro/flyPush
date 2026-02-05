@@ -14,7 +14,6 @@ def female_stock(db: Session, test_tenant: Tenant, test_user: User) -> Stock:
         tenant_id=test_tenant.id,
         stock_id="FEMALE-001",
         genotype="w[1118]; +; +",
-        source="Lab",
         created_by_id=test_user.id,
         modified_by_id=test_user.id,
     )
@@ -31,7 +30,6 @@ def male_stock(db: Session, test_tenant: Tenant, test_user: User) -> Stock:
         tenant_id=test_tenant.id,
         stock_id="MALE-001",
         genotype="y[1] w[*]; P{UAS-GFP}; +",
-        source="Lab",
         created_by_id=test_user.id,
         modified_by_id=test_user.id,
     )
