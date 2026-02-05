@@ -45,3 +45,19 @@
 - **Pattern**: Use optional `repository` query param rather than separate endpoints per repo
 - **Pattern**: Return repository info in stats endpoint to populate UI filters
 - **Pattern**: Add `/repositories` endpoint for explicit listing of available repositories
+
+## 2026-02-05: Pre-commit and CI version mismatch
+
+**Problem**: Pre-commit hooks passed locally but CI failed with ruff linting errors.
+
+**Root cause**: Pre-commit used ruff `v0.1.15` while CI installed the latest ruff (which was `0.15.0`). The newer version had additional rules enabled by default.
+
+**Solution**:
+1. Keep tool versions synchronized across all config files:
+   - `.pre-commit-config.yaml` - defines the pre-commit hook version
+   - `.github/workflows/ci.yml` - pins the CI version
+   - `pyproject.toml` - defines the dev dependency version
+2. Use `pre-commit autoupdate` periodically to keep hooks current
+3. When adding ignore rules, add them to `pyproject.toml` so they apply everywhere
+
+**Prevention**: Before pushing, run `pre-commit run --all-files` to catch issues the same way CI does.
