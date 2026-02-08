@@ -627,17 +627,20 @@ def create_batch_label_pdf(
     label_format: str = "dymo_11352",
     labels_per_page: int = 1,
     code_type: Literal["qr", "barcode"] = "qr",
+    for_print: bool = False,
 ) -> bytes:
     """Generate a PDF with multiple labels.
 
-    Creates each label as PNG (same as print output) and embeds them in a PDF.
-    This ensures the preview matches exactly what will be printed.
+    Creates each label as PNG and embeds them in a PDF.
+    For preview (for_print=False): landscape orientation for web display.
+    For print (for_print=True): portrait orientation at 300 DPI for CUPS.
 
     Args:
         labels: List of label dicts with stock_id, genotype, source_info, location_info, print_date.
         label_format: Label format key from LABEL_SIZES.
         labels_per_page: Number of labels per page (1 for thermal printers).
         code_type: Type of code to render ("qr" or "barcode").
+        for_print: If True, generate portrait PDF for printing via CUPS.
 
     Returns:
         bytes: PDF file contents.
@@ -659,8 +662,14 @@ def create_batch_label_pdf(
         height_pt = fmt.get("height", 54) * mm
     landscape_content = fmt.get("landscape_content", False)
 
-    # For landscape_content, swap page dimensions for preview
-    if landscape_content:
+    if for_print:
+        # Reason: For printing, use portrait (narrow x tall) to match CUPS PageSize
+        # (e.g., w72h154). The PNG from create_label_png is already portrait
+        # (rotated for the printer). PDF embeds it at correct physical dimensions;
+        # CUPS rasterizes at printer's native 300 DPI for full quality.
+        page_width, page_height = width_pt, height_pt
+    elif landscape_content:
+        # For preview, swap to landscape for web display
         page_width, page_height = height_pt, width_pt
     else:
         page_width, page_height = width_pt, height_pt
@@ -672,7 +681,7 @@ def create_batch_label_pdf(
         if i > 0:
             c.showPage()
 
-        # Generate high-quality PNG for preview
+        # Generate 300 DPI PNG (no downsampling)
         png_data = create_label_png(
             stock_id=label_data["stock_id"],
             genotype=label_data["genotype"],
@@ -681,15 +690,16 @@ def create_batch_label_pdf(
             location_info=label_data.get("location_info"),
             code_type=code_type,
             print_date=label_data.get("print_date"),
-            for_print=False,  # High-quality for preview
+            for_print=False,  # Always 300 DPI PNG source
         )
 
         # Load PNG
         png_buffer = io.BytesIO(png_data)
         png_img = Image.open(png_buffer)
 
-        # For landscape_content, rotate PNG back for landscape preview
-        if landscape_content:
+        # For preview with landscape_content, rotate PNG back to landscape
+        # For print, PNG is already portrait (correct for printer)
+        if not for_print and landscape_content:
             png_img = png_img.rotate(90, expand=True)
 
         # Save to buffer for reportlab

@@ -139,6 +139,15 @@ if output_dpi < render_dpi:
 img.save(buffer, format="PNG", dpi=(output_dpi, output_dpi))
 ```
 
-**CUPS print_png command must use**: `scaling=100` + `fit-to-page=false`. Nothing else.
+**UPDATE**: Supersampling still produced unreadable barcodes — LANCZOS introduces gray
+pixels that confuse barcode readers, and 72 DPI is fundamentally too low resolution.
+
+**Final solution**: Use PDF instead of PNG for CUPS printing:
+1. Server generates a portrait PDF (72pt x 153pt) embedding the 300 DPI PNG
+2. Agent downloads PDF and prints via `lp` (not `lpr`)
+3. CUPS rasterizes the PDF at the printer's native 300 DPI → full quality
+
+**Key**: `create_batch_label_pdf(for_print=True)` generates portrait PDF for print.
+`for_print=False` generates landscape PDF for web preview.
 
 **See also**: `PRINTING_NOTES.md` in the flyprint repo for the complete reference.

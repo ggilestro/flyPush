@@ -1118,6 +1118,7 @@ async def get_job_pdf(
             label_data,
             label_format=labels.label_format,
             code_type=labels.code_type,
+            for_print=True,  # Portrait PDF with 300 DPI content for CUPS
         )
 
     return Response(
