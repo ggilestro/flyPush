@@ -1187,7 +1187,7 @@ async def get_job_image(
                 location_info=label.location_info,
                 code_type=labels.code_type,
                 print_date=label.print_date,
-                for_print=False,  # 300 DPI for quality; DPI metadata embedded in PNG
+                for_print=True,  # 72 DPI output (supersampled from 300 DPI) for CUPS scaling=100
             )
         else:
             raise HTTPException(

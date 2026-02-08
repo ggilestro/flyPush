@@ -96,14 +96,15 @@ def create_label_png(
     landscape_content = fmt.get("landscape_content", False)
 
     # DPI settings
-    # For preview: 300 DPI gives good quality
-    # For print: CUPS treats pixels as points (1/72 inch), so output at 72 DPI
-    if for_print:
-        dpi = 72
-    else:
-        dpi = 300
+    # Always render at 300 DPI for quality. For print output, supersample:
+    # render at 300 DPI then LANCZOS downsample to 72 DPI.
+    # Reason: CUPS treats 1 pixel = 1 point (1/72 inch) with scaling=100,
+    # so output must be 72 DPI for correct physical size. Supersampling
+    # gives sharp text/QR while maintaining correct dimensions.
+    render_dpi = 300
+    output_dpi = 72 if for_print else 300
 
-    # Calculate pixel dimensions
+    # Calculate pixel dimensions at render DPI
     # For landscape_content, we draw in landscape orientation (width/height swapped)
     if landscape_content:
         # Draw with long edge horizontal: 54mm wide x 25.4mm tall
@@ -113,15 +114,15 @@ def create_label_png(
         draw_width_mm = width_mm
         draw_height_mm = height_mm
 
-    width_px = int(draw_width_mm / 25.4 * dpi)
-    height_px = int(draw_height_mm / 25.4 * dpi)
+    width_px = int(draw_width_mm / 25.4 * render_dpi)
+    height_px = int(draw_height_mm / 25.4 * render_dpi)
 
     # Create white background image
     img = Image.new("RGB", (width_px, height_px), "white")
     draw = ImageDraw.Draw(img)
 
-    # Pixels per mm at current DPI
-    px_per_mm = dpi / 25.4
+    # Pixels per mm at render DPI
+    px_per_mm = render_dpi / 25.4
 
     # Margins in pixels (~1.5mm)
     left_margin_mm = fmt.get("left_margin_mm", 1.5)
@@ -266,8 +267,8 @@ def create_label_png(
 
         # Generate barcode using code128 library (no text, clean output)
         # Target: ~50mm wide, 8mm tall at current DPI
-        target_barcode_width_px = int(50 / 25.4 * dpi)
-        target_barcode_height_px = int(8 / 25.4 * dpi)
+        target_barcode_width_px = int(50 / 25.4 * render_dpi)
+        target_barcode_height_px = int(8 / 25.4 * render_dpi)
 
         # Calculate thickness to achieve target width
         # First generate with thickness=1 to measure module count
@@ -302,9 +303,17 @@ def create_label_png(
     if landscape_content:
         img = img.rotate(-90, expand=True)
 
+    # Supersample: downsample to output DPI if needed (for print)
+    if output_dpi < render_dpi:
+        # Reason: LANCZOS resampling from 300->72 DPI gives sharp text/QR
+        # at the correct pixel dimensions for CUPS (1px = 1pt = 1/72 inch)
+        out_w = int(img.width * output_dpi / render_dpi)
+        out_h = int(img.height * output_dpi / render_dpi)
+        img = img.resize((out_w, out_h), Image.Resampling.LANCZOS)
+
     # Save to bytes
     buffer = io.BytesIO()
-    img.save(buffer, format="PNG", dpi=(dpi, dpi))
+    img.save(buffer, format="PNG", dpi=(output_dpi, output_dpi))
     buffer.seek(0)
     return buffer.getvalue()
 

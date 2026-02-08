@@ -112,3 +112,33 @@
 - ReportLab canvas rotation (coordinate transforms moved content off-page)
 
 **Documentation**: See `/docs/label-printer-integration.md` for full details and reference when adding new printer models.
+
+## 2026-02-08: CUPS Supersampling for Print Quality
+
+**Problem**: 72 DPI images have correct size for CUPS but blurry text. 300 DPI images have sharp text but print over multiple labels (4x too large).
+
+**Root cause**: CUPS image filter treats 1 pixel = 1 point (1/72 inch) with `scaling=100`. No CUPS option reliably scales by DPI metadata.
+
+**What does NOT work** (exhaustively tested):
+- `ppi=300` — ignored by CUPS image filter
+- `natural-scaling=100` with 300 DPI — still prints over multiple labels
+- `fit-to-page` — doesn't respect PageSize on Dymo
+- `scaling=24` (72/300*100) — prints minuscule output
+
+**Solution**: Supersample — render at 300 DPI, LANCZOS downsample to 72 DPI before sending to CUPS:
+```python
+# In create_label_png():
+render_dpi = 300  # Always render at 300 DPI for sharp text
+output_dpi = 72 if for_print else 300
+# ... render everything at render_dpi ...
+# Before saving:
+if output_dpi < render_dpi:
+    out_w = int(img.width * output_dpi / render_dpi)
+    out_h = int(img.height * output_dpi / render_dpi)
+    img = img.resize((out_w, out_h), Image.Resampling.LANCZOS)
+img.save(buffer, format="PNG", dpi=(output_dpi, output_dpi))
+```
+
+**CUPS print_png command must use**: `scaling=100` + `fit-to-page=false`. Nothing else.
+
+**See also**: `PRINTING_NOTES.md` in the flyprint repo for the complete reference.
