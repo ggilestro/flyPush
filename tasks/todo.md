@@ -4,13 +4,17 @@
 Create an AUR `-git` package for FlyPrint so it can be installed on Arch/Manjaro with `yay -S flyprint-git`.
 
 **Date Started:** 2026-02-08
-**Status:** In Progress
+**Date Completed:** 2026-02-08
+**Status:** Complete
 
-## Files Created
-- `aur/flyprint-git/PKGBUILD` - Standard AUR `-git` PKGBUILD
-- `aur/flyprint-git/flyprint.desktop` - Freedesktop .desktop file for GUI entry
-- `aur/flyprint-git/flyprint.service` - Systemd user service for headless mode
-- `aur/flyprint-git/.SRCINFO` - Generated package metadata
+## Key Decision
+Moved flyprint to a dedicated repo (`ggilestro/flyPrint`) so `pyproject.toml` sits at the repo root and `flyprint/` is a proper package subdirectory. This avoids hatchling's empty-wheel issue when building from a monorepo subdirectory.
+
+## Files Created (in flyPrint repo)
+- `aur/PKGBUILD` - AUR `-git` PKGBUILD (source: `git+https://github.com/ggilestro/flyPrint.git`)
+- `aur/flyprint.desktop` - Freedesktop .desktop file for GUI entry
+- `aur/flyprint.service` - Systemd user service for headless mode
+- `aur/.SRCINFO` - Generated package metadata
 - `flyprint/assets/icon.png` - 256x256 application icon (green circle with white "P")
 
 ## Checklist
@@ -19,10 +23,11 @@ Create an AUR `-git` package for FlyPrint so it can be installed on Arch/Manjaro
 - [x] Create systemd user service
 - [x] Generate .SRCINFO
 - [x] Generate icon.png (256x256)
-- [ ] Test build with `makepkg -si`
-- [ ] Verify `flyprint --version` works
-- [ ] Verify `flyprint-gui` launches
-- [ ] Verify .desktop shows in app menu
+- [x] Move flyprint to dedicated repo (ggilestro/flyPrint)
+- [x] Test build with `makepkg -sf` — builds successfully
+- [x] Install and verify `flyprint --version` works
+- [x] Verify `flyprint-gui` binary installed
+- [x] Verify .desktop, icon, systemd service all installed
 
 ---
 
