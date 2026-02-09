@@ -464,7 +464,7 @@ class AuthService:
         if existing_user:
             raise ValueError("Email already registered in this lab.")
 
-        # Create user (auto-approved)
+        # Create user (auto-approved, email pre-verified via invitation)
         user = User(
             tenant_id=invitation.tenant_id,
             email=data.email,
@@ -473,7 +473,7 @@ class AuthService:
             role=UserRole.USER,
             status=UserStatus.APPROVED,
             is_active=True,
-            is_email_verified=False,
+            is_email_verified=True,
         )
         self.db.add(user)
 
@@ -483,14 +483,10 @@ class AuthService:
         self.db.commit()
         self.db.refresh(user)
 
-        # Send verification email
-        if base_url:
-            self.send_verification_email(user, base_url)
-
         return (
             user,
             None,
-            "Registration successful! Please check your email to verify your account.",
+            "Registration successful! You can now log in.",
         )
 
     def _register_invited_tenant(
@@ -539,7 +535,7 @@ class AuthService:
         self.db.add(tenant)
         self.db.flush()
 
-        # Create admin user (auto-approved)
+        # Create admin user (auto-approved, email pre-verified via invitation)
         user = User(
             tenant_id=tenant.id,
             email=data.email,
@@ -548,7 +544,7 @@ class AuthService:
             role=UserRole.ADMIN,
             status=UserStatus.APPROVED,
             is_active=True,
-            is_email_verified=False,
+            is_email_verified=True,
         )
         self.db.add(user)
 
@@ -558,14 +554,10 @@ class AuthService:
         self.db.commit()
         self.db.refresh(user)
 
-        # Send verification email
-        if base_url:
-            self.send_verification_email(user, base_url)
-
         return (
             user,
             None,
-            "Registration successful! Please check your email to verify your account.",
+            "Registration successful! You can now log in.",
         )
 
     def login(self, data: UserLogin) -> tuple[User | None, Token | None, str]:

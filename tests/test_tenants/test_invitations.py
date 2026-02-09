@@ -383,9 +383,8 @@ def test_get_invitation_validation(mock_email, db, service, admin_user, org, ten
 
 @patch("app.auth.service.get_email_service")
 def test_register_via_lab_member_invitation(mock_email, db, service, admin_user, tenant_with_org):
-    """Test registration via LAB_MEMBER invitation creates auto-approved user."""
+    """Test registration via LAB_MEMBER invitation creates auto-approved, email-verified user."""
     mock_email.return_value.send_invitation_email.return_value = True
-    mock_email.return_value.send_verification_email.return_value = True
 
     # Create invitation
     data = InvitationCreate(email="invitee@test.edu")
@@ -412,7 +411,8 @@ def test_register_via_lab_member_invitation(mock_email, db, service, admin_user,
     assert user.tenant_id == tenant_with_org.id
     assert user.role == UserRole.USER
     assert user.status == UserStatus.APPROVED
-    assert "successful" in message.lower()
+    assert user.is_email_verified is True
+    assert "log in" in message.lower()
 
     # Invitation should be accepted
     db.refresh(inv)
@@ -423,9 +423,8 @@ def test_register_via_lab_member_invitation(mock_email, db, service, admin_user,
 def test_register_via_new_tenant_invitation(
     mock_email, db, service, admin_user, org, tenant_with_org
 ):
-    """Test registration via NEW_TENANT invitation creates new lab in org."""
+    """Test registration via NEW_TENANT invitation creates new lab in org, no approval needed."""
     mock_email.return_value.send_invitation_email.return_value = True
-    mock_email.return_value.send_verification_email.return_value = True
 
     # Create invitation
     data = InvitationCreate(email="newpi@test.edu", invitation_type="new_tenant")
@@ -454,6 +453,7 @@ def test_register_via_new_tenant_invitation(
     assert user is not None
     assert user.role == UserRole.ADMIN
     assert user.status == UserStatus.APPROVED
+    assert user.is_email_verified is True
 
     # User should be in a NEW tenant, not the inviter's tenant
     assert user.tenant_id != tenant_with_org.id
