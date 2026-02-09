@@ -464,6 +464,23 @@
                 </div>
             </template>
 
+            <!-- Test Label -->
+            <template x-if="agents.some(a => a.is_online)">
+                <div class="mt-4 flex items-center gap-3">
+                    <button @click="printTestLabel()" :disabled="testLabelLoading"
+                            class="inline-flex items-center rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Print a test label to verify printer alignment">
+                        <svg class="h-3 w-3 mr-1" :class="{'animate-spin': testLabelLoading}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span x-text="testLabelLoading ? 'Sending...' : 'Print Test Label'"></span>
+                    </button>
+                    <span x-show="testLabelMessage" x-transition
+                          :class="testLabelError ? 'text-red-600' : 'text-green-600'"
+                          class="text-xs" x-text="testLabelMessage"></span>
+                </div>
+            </template>
+
             <!-- Pairing Wizard Modal -->
             <div x-show="showPairing" x-cloak
                  class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50"
@@ -1026,6 +1043,11 @@ function printAgentsSettings() {
         pairingPollTimer: null,
         pairingAgentName: '',
 
+        // Test label state
+        testLabelLoading: false,
+        testLabelMessage: '',
+        testLabelError: false,
+
         // Edit modal state
         showEditModal: false,
         editAgentId: '',
@@ -1185,6 +1207,41 @@ function printAgentsSettings() {
             if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
             if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
             return date.toLocaleDateString();
+        },
+
+        async printTestLabel() {
+            this.testLabelLoading = true;
+            this.testLabelMessage = '';
+            this.testLabelError = false;
+
+            try {
+                // Fetch label format from settings
+                const settingsResp = await fetch('/api/organizations/tenant/label-settings', { credentials: 'include' });
+                let format = 'dymo_11352';
+                if (settingsResp.ok) {
+                    const settings = await settingsResp.json();
+                    format = settings.default_label_format;
+                }
+
+                const response = await fetch(`/api/labels/test-label/print?format=${format}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    this.testLabelMessage = 'Test label sent to printer. Check alignment.';
+                    setTimeout(() => this.testLabelMessage = '', 5000);
+                } else {
+                    throw new Error('Failed to print test label');
+                }
+            } catch (error) {
+                console.error('Error printing test label:', error);
+                this.testLabelMessage = 'Failed to print test label.';
+                this.testLabelError = true;
+                setTimeout(() => this.testLabelMessage = '', 5000);
+            } finally {
+                this.testLabelLoading = false;
+            }
         }
     }
 }

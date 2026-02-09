@@ -102,15 +102,6 @@
     <div class="flex items-center justify-between border-t pt-4">
         <div class="flex items-center gap-3">
             <span class="text-sm text-gray-500" x-text="selectedStocks.length + ' stock(s) selected'"></span>
-            <!-- Test Label Button -->
-            <button @click="printTestLabel()" :disabled="loading || !hasOnlineAgent"
-                    class="inline-flex items-center rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Print a test label to verify alignment">
-                <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Test Label
-            </button>
         </div>
         <div class="flex items-center gap-3">
             <button @click="generatePreview()" :disabled="selectedStocks.length === 0 || loading"
@@ -497,36 +488,6 @@ function labelsPage() {
             this.showPreview = false;
         },
 
-        async printTestLabel() {
-            if (!this.hasOnlineAgent) {
-                this.errorMessage = 'No print agent online. Please connect an agent first.';
-                return;
-            }
-
-            this.loading = true;
-            this.errorMessage = '';
-            this.successMessage = '';
-
-            try {
-                const response = await fetch(`/api/labels/test-label/print?format=${this.labelFormat}`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    this.successMessage = 'Test label sent to printer. Check alignment.';
-                    setTimeout(() => this.successMessage = '', 5000);
-                    await this.loadRecentJobs();
-                } else {
-                    throw new Error('Failed to print test label');
-                }
-            } catch (error) {
-                console.error('Error printing test label:', error);
-                this.errorMessage = 'Failed to print test label.';
-            } finally {
-                this.loading = false;
-            }
-        }
     }
 }
 </script>
