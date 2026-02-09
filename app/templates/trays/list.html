@@ -55,13 +55,12 @@
                             <h3 class="text-lg font-medium text-gray-900" x-text="tray.name"></h3>
                             <p class="mt-1 text-sm text-gray-500" x-text="tray.description || 'No description'"></p>
                         </div>
-                        <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium"
-                              :class="{
-                                  'bg-blue-100 text-blue-700': tray.tray_type === 'numeric',
-                                  'bg-green-100 text-green-700': tray.tray_type === 'grid',
-                                  'bg-purple-100 text-purple-700': tray.tray_type === 'custom'
-                              }"
-                              x-text="tray.tray_type"></span>
+                        <span class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors">
+                            Open
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </span>
                     </div>
                     <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
                         <div class="flex items-center">
@@ -109,6 +108,32 @@
                                     </template>
                                 </div>
                             </div>
+                        </div>
+                    </template>
+                    <!-- Flip & Print button -->
+                    <template x-if="tray.stock_count > 0">
+                        <div class="mt-3 pt-3 border-t border-gray-100">
+                            <button @click.prevent.stop="flipAndPrint(tray.id, tray.stock_count)"
+                                    :disabled="printingTrayId === tray.id"
+                                    :class="{
+                                        'bg-emerald-200 text-emerald-800 ring-emerald-300': printSuccessTrayId === tray.id,
+                                        'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 ring-emerald-200': printSuccessTrayId !== tray.id && hasOnlineAgent,
+                                        'bg-slate-50 hover:bg-slate-100 text-slate-600 ring-slate-200': printSuccessTrayId !== tray.id && !hasOnlineAgent
+                                    }"
+                                    class="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium shadow-sm ring-1 ring-inset disabled:opacity-50 transition-all duration-200">
+                                <svg class="h-4 w-4" :class="{'animate-spin': printingTrayId === tray.id}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <template x-if="printSuccessTrayId === tray.id">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </template>
+                                    <template x-if="printingTrayId === tray.id && printSuccessTrayId !== tray.id">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </template>
+                                    <template x-if="printingTrayId !== tray.id && printSuccessTrayId !== tray.id">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </template>
+                                </svg>
+                                <span x-text="printSuccessTrayId === tray.id ? 'Sent!' : (printingTrayId === tray.id ? 'Printing...' : 'Flip & Print All')"></span>
+                            </button>
                         </div>
                     </template>
                 </a>
@@ -191,6 +216,10 @@ function traysList() {
         trays: [],
         showCreateModal: false,
         creating: false,
+        hasOnlineAgent: false,
+        labelSettings: null,
+        printingTrayId: null,
+        printSuccessTrayId: null,
         newTray: {
             name: '',
             description: '',
@@ -202,15 +231,95 @@ function traysList() {
         async loadTrays() {
             this.loading = true;
             try {
-                const response = await fetch('/api/trays', { credentials: 'include' });
-                if (response.ok) {
-                    const data = await response.json();
+                const [traysRes, agentRes, settingsRes] = await Promise.all([
+                    fetch('/api/trays', { credentials: 'include' }),
+                    fetch('/api/labels/agents/status/online', { credentials: 'include' }),
+                    fetch('/api/organizations/tenant/label-settings', { credentials: 'include' })
+                ]);
+                if (traysRes.ok) {
+                    const data = await traysRes.json();
                     this.trays = data.items || [];
+                }
+                if (agentRes.ok) {
+                    const data = await agentRes.json();
+                    this.hasOnlineAgent = data.has_online_agent;
+                }
+                if (settingsRes.ok) {
+                    this.labelSettings = await settingsRes.json();
                 }
             } catch (error) {
                 console.error('Error loading trays:', error);
             } finally {
                 this.loading = false;
+            }
+        },
+        async flipAndPrint(trayId, stockCount) {
+            if (!stockCount || this.printingTrayId) return;
+            if (!confirm(`Flip & print all ${stockCount} stocks in this tray?`)) return;
+
+            this.printingTrayId = trayId;
+            this.printSuccessTrayId = null;
+            const format = this.labelSettings?.default_label_format || 'dymo_11352';
+            const codeType = this.labelSettings?.default_code_type || 'qr';
+
+            try {
+                // Fetch stock IDs for this tray
+                const stocksRes = await fetch(`/api/stocks?tray_id=${trayId}&limit=1000`, { credentials: 'include' });
+                if (!stocksRes.ok) throw new Error('Failed to fetch stocks');
+                const stocksData = await stocksRes.json();
+                const stockIds = (stocksData.items || []).map(s => s.id);
+                if (stockIds.length === 0) return;
+
+                if (this.hasOnlineAgent) {
+                    const printRes = await fetch('/api/labels/print', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            stock_ids: stockIds,
+                            label_format: format,
+                            copies: 1,
+                            code_type: codeType,
+                            record_flip: true
+                        })
+                    });
+                    if (!printRes.ok) throw new Error('Failed to create print job');
+                } else {
+                    // No agent - record flips then open PDF for first stock
+                    for (const sid of stockIds) {
+                        await fetch('/api/flips/record', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ stock_id: sid })
+                        });
+                    }
+                    // Fetch batch PDF and open in new tab
+                    const pdfRes = await fetch(`/api/labels/batch/pdf?format=${format}&code_type=${codeType}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(stockIds)
+                    });
+                    if (pdfRes.ok) {
+                        const blob = await pdfRes.blob();
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                    }
+                }
+
+                this.printSuccessTrayId = trayId;
+                // Reload trays to update flip counts
+                const traysRes = await fetch('/api/trays', { credentials: 'include' });
+                if (traysRes.ok) {
+                    const data = await traysRes.json();
+                    this.trays = data.items || [];
+                }
+                setTimeout(() => this.printSuccessTrayId = null, 2000);
+            } catch (error) {
+                console.error('Error flipping/printing tray:', error);
+            } finally {
+                this.printingTrayId = null;
             }
         },
         async createTray() {
