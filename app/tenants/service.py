@@ -377,13 +377,29 @@ class TenantService:
         now = datetime.now(UTC)
         result = []
         for inv in invitations:
-            # Auto-expire pending invitations past their expiry
-            expires_at = inv.expires_at
-            if expires_at.tzinfo is None:
-                expires_at = expires_at.replace(tzinfo=UTC)
-            if inv.status == InvitationStatus.PENDING and now > expires_at:
-                inv.status = InvitationStatus.EXPIRED
-                self.db.commit()
+            if inv.status == InvitationStatus.PENDING:
+                expires_at = inv.expires_at
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=UTC)
+                if now > expires_at:
+                    # Auto-expire past expiry
+                    inv.status = InvitationStatus.EXPIRED
+                    self.db.commit()
+                else:
+                    # Auto-accept if invitee already registered in this tenant
+                    existing = (
+                        self.db.query(User)
+                        .filter(
+                            User.email == inv.email,
+                            User.tenant_id == inv.tenant_id,
+                            User.is_active.is_(True),
+                        )
+                        .first()
+                    )
+                    if existing:
+                        inv.status = InvitationStatus.ACCEPTED
+                        inv.accepted_at = now
+                        self.db.commit()
 
             inviter = self.db.query(User).filter(User.id == inv.invited_by_id).first()
             result.append(
