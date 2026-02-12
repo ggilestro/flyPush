@@ -598,7 +598,7 @@ class AuthService:
         # Generate tokens
         token = Token(
             access_token=create_access_token(user.id, user.tenant_id, user.email),
-            refresh_token=create_refresh_token(user.id, user.tenant_id),
+            refresh_token=create_refresh_token(user.id, user.tenant_id, user.email),
         )
 
         return user, token, "Login successful."

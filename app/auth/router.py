@@ -204,15 +204,18 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Set tokens as cookies
+    # Set tokens as cookies (max_age from config)
+    from app.config import get_settings
+
+    _settings = get_settings()
     response.set_cookie(
         key="access_token",
         value=token.access_token,
         httponly=True,
         secure=False,  # Set to True in production
         samesite="lax",
-        max_age=30 * 60,  # 30 minutes
-        path="/",  # Cookie available for all paths
+        max_age=_settings.access_token_expire_minutes * 60,
+        path="/",
     )
     response.set_cookie(
         key="refresh_token",
@@ -220,8 +223,8 @@ async def login(
         httponly=True,
         secure=False,  # Set to True in production
         samesite="lax",
-        max_age=7 * 24 * 60 * 60,  # 7 days
-        path="/",  # Cookie available for all paths
+        max_age=_settings.refresh_token_expire_days * 24 * 60 * 60,
+        path="/",
     )
 
     return {"message": message, "token": token}

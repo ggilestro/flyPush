@@ -16,7 +16,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.auth.utils import decode_access_token
+from app.auth.utils import (
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+    decode_refresh_token,
+)
 from app.config import get_settings
 from app.db.database import get_db, init_db
 from app.db.models import User
@@ -53,6 +58,92 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def refresh_token_middleware(request: Request, call_next):
+    """Sliding session middleware: refreshes expired access tokens using the refresh token.
+
+    Parses cookies from raw ASGI headers (to avoid caching) so that injected
+    tokens are visible to downstream Cookie() dependencies.
+    """
+    from http.cookies import SimpleCookie
+
+    # Parse cookies from raw headers to avoid Request.cookies caching
+    cookie_header = None
+    for key, value in request.scope["headers"]:
+        if key == b"cookie":
+            cookie_header = value.decode()
+            break
+
+    cookies = {}
+    if cookie_header:
+        sc = SimpleCookie()
+        try:
+            sc.load(cookie_header)
+        except Exception:
+            pass
+        cookies = {k: v.value for k, v in sc.items()}
+
+    access_token = cookies.get("access_token")
+    refresh_token_value = cookies.get("refresh_token")
+    new_access_token = None
+    new_refresh_token = None
+
+    if refresh_token_value:
+        # Check if the access token is missing or expired
+        is_valid = bool(access_token and decode_access_token(access_token))
+
+        if not is_valid:
+            refresh_data = decode_refresh_token(refresh_token_value)
+            if refresh_data and refresh_data.get("email"):
+                # Reason: create fresh tokens so the session slides forward
+                new_access_token = create_access_token(
+                    user_id=refresh_data["sub"],
+                    tenant_id=refresh_data["tenant_id"],
+                    email=refresh_data["email"],
+                )
+                new_refresh_token = create_refresh_token(
+                    user_id=refresh_data["sub"],
+                    tenant_id=refresh_data["tenant_id"],
+                    email=refresh_data["email"],
+                )
+
+                # Inject the fresh access token into raw scope headers so
+                # downstream FastAPI Cookie() params and request.cookies see it
+                cookies["access_token"] = new_access_token
+                cookies["refresh_token"] = new_refresh_token
+                new_cookie_header = "; ".join(f"{k}={v}" for k, v in cookies.items())
+                new_headers = [(k, v) for k, v in request.scope["headers"] if k != b"cookie"]
+                new_headers.append((b"cookie", new_cookie_header.encode()))
+                request.scope["headers"] = new_headers
+
+    response = await call_next(request)
+
+    # Set refreshed cookies so the browser stores the new tokens
+    if new_access_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_access_token,
+            httponly=True,
+            secure=False,  # Set to True in production
+            samesite="lax",
+            max_age=settings.access_token_expire_minutes * 60,
+            path="/",
+        )
+    if new_refresh_token:
+        response.set_cookie(
+            key="refresh_token",
+            value=new_refresh_token,
+            httponly=True,
+            secure=False,  # Set to True in production
+            samesite="lax",
+            max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+            path="/",
+        )
+
+    return response
+
 
 # Static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

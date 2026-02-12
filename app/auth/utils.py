@@ -91,6 +91,7 @@ def create_access_token(
 def create_refresh_token(
     user_id: str,
     tenant_id: str,
+    email: str = "",
     expires_delta: timedelta | None = None,
 ) -> str:
     """Create a JWT refresh token.
@@ -98,6 +99,7 @@ def create_refresh_token(
     Args:
         user_id: User's UUID.
         tenant_id: Tenant's UUID.
+        email: User's email (used for transparent token refresh).
         expires_delta: Optional custom expiration time.
 
     Returns:
@@ -111,6 +113,7 @@ def create_refresh_token(
     to_encode = {
         "sub": user_id,
         "tenant_id": tenant_id,
+        "email": email,
         "exp": expire,
         "type": "refresh",
     }
