@@ -97,7 +97,7 @@
 
     <!-- Import Section -->
     <div class="my-4 border-t border-gray-200"></div>
-    <div x-data="{ importOpen: {% if '/import' in request.path or '/stocks/import' in request.path %}true{% else %}false{% endif %} }">
+    <div x-data="{ importOpen: {% if '/import' in request.path or '/stocks/import' in request.path or '/stocks/wizard' in request.path %}true{% else %}false{% endif %} }">
         <!-- Import Header (collapsible) -->
         <button @click="importOpen = !importOpen"
                 class="w-full group flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium {% if '/import' in request.path or '/stocks/import' in request.path %}text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
@@ -121,6 +121,17 @@
             x-transition:leave-start="opacity-100 translate-y-0"
             x-transition:leave-end="opacity-0 -translate-y-1"
             class="mt-1 space-y-1 pl-4">
+            <!-- Guided Entry -->
+            <li>
+                <a href="/stocks/wizard"
+                   class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if request.path == '/stocks/wizard' %}bg-primary-50 text-primary-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                    <svg class="h-4 w-4 {% if request.path == '/stocks/wizard' %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Guided Entry
+                </a>
+            </li>
+
             <!-- From CSV/Excel -->
             <li>
                 <a href="/stocks/import"

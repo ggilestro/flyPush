@@ -1,3 +1,142 @@
+# Stock Import Wizard
+
+## Current Task
+Add a 4-step guided wizard for adding stocks at `/stocks/wizard`.
+
+**Date Started:** 2026-02-11
+**Date Completed:** 2026-02-11
+**Status:** Complete
+
+### Files Created
+- `app/templates/stocks/wizard.html` — Full wizard template with Alpine.js stepper
+
+### Files Modified
+- `app/main.py` — Added `GET /stocks/wizard` page route (before `/{stock_id}`)
+- `app/templates/components/sidebar_content.html` — Added "Guided Entry" link under Import section
+
+### Tests
+- `tests/test_stocks/test_wizard.py` — 3 tests (auth, unauth redirect, step labels)
+- Full suite: 399 passed, 11 skipped
+
+### Wizard Steps
+1. **Origin** — Public repository (FlyBase search) or Lab/Other (manual genotype)
+2. **Identity** — Stock ID, shortname (with LLM suggest), notes
+3. **Location** — Tray and position selection
+4. **Review** — Summary and submit
+
+---
+
+# Add Shortname Field to Stock Model
+
+## Current Task
+Add a `shortname` field (human-readable phenotype summary) to the Stock model, with full-stack support and LLM-assisted suggestion.
+
+**Date Started:** 2026-02-11
+**Date Completed:** 2026-02-11
+**Status:** Complete
+
+## Implementation Summary
+
+### Database Migration (`alembic/versions/011_add_stock_shortname.py`)
+- Added `shortname` column: String(255), nullable, no default
+- Added index `ix_stocks_shortname` with mysql_length=100 for search
+
+### SQLAlchemy Model (`app/db/models.py`)
+- Added `shortname: Mapped[str | None]` to Stock class (after genotype)
+
+### Pydantic Schemas (`app/stocks/schemas.py`)
+- Added `shortname: str | None = Field(None, max_length=255)` to StockBase and StockUpdate
+- StockResponse inherits from StockBase automatically
+
+### Service Layer (`app/stocks/service.py`)
+- `create_stock()`: includes `shortname=data.shortname`
+- `update_stock()`: conditional update `if data.shortname is not None`
+- `_stock_to_response()`: includes `shortname=stock.shortname`
+- Search: added `Stock.shortname.ilike(search_term)` to text search filter
+
+### API Endpoint (`app/stocks/router.py`)
+- `POST /api/stocks/suggest-shortname` — accepts `{"genotype": "..."}`, returns `{"shortname": "..."}`
+- Calls `LLMService.ask()` with phenotype-summary prompt, strips quotes
+- Returns 400 if LLM not configured, 500 on LLM error
+
+### Frontend Changes
+- **List view** (`list.html`): Shows shortname below genotype (small muted text)
+- **Detail view** (`detail.html`): Shows shortname as italic subtitle in view mode; text input + "Suggest" button in edit mode
+- **New stock form** (`new.html`): Shortname input + "Suggest" button after genotype
+- **Exchange browse** (`browse.html`): Shows shortname below genotype
+
+### Tests (`tests/test_stocks/test_shortname.py`)
+- 12 tests: create with/without shortname, max length validation, update, search by shortname, get with/without, suggest endpoint (success, not configured, LLM error)
+
+## Test Results
+- 12 new tests pass
+- Full suite: 396 passed, 11 skipped, 0 failures
+
+## Files Created
+- `alembic/versions/011_add_stock_shortname.py`
+- `tests/test_stocks/test_shortname.py`
+
+## Files Modified
+- `app/db/models.py` — shortname field on Stock
+- `app/stocks/schemas.py` — StockBase, StockUpdate
+- `app/stocks/service.py` — create, update, search, _stock_to_response
+- `app/stocks/router.py` — suggest-shortname endpoint
+- `app/templates/stocks/list.html` — show shortname
+- `app/templates/stocks/detail.html` — display + edit + suggest
+- `app/templates/stocks/new.html` — create form + suggest
+- `app/templates/exchange/browse.html` — show shortname
+
+---
+
+# Stock Detail: Next/Previous Navigation
+
+## Current Task
+Add prev/next navigation to stock detail page that respects the user's current sort/filter context from the list page.
+
+**Date Started:** 2026-02-11
+**Date Completed:** 2026-02-11
+**Status:** Complete
+
+## Implementation Summary
+
+### Schema Changes (`app/stocks/schemas.py`)
+- Added `AdjacentStocksResponse` with `prev_id`, `prev_stock_id`, `next_id`, `next_stock_id` (all optional)
+
+### Service Layer (`app/stocks/service.py`)
+- Refactored `list_stocks()`: extracted `_build_filtered_query()` and `_get_sort_column()` helper methods for reuse
+- Added `get_adjacent_stocks()` method using composite sort key `(sort_column, id)` for deterministic tie-breaking
+- Excludes current stock from adjacent queries to avoid self-matching
+
+### API Endpoint (`app/stocks/router.py`)
+- `GET /api/stocks/{stock_id}/adjacent?q=&sort_by=&sort_order=&tag_ids=&tray_id=`
+- Returns `AdjacentStocksResponse`
+
+### Frontend Changes
+- `app/templates/stocks/list.html`: Stock links now encode current sort/filter state as query params via `getStockDetailUrl()`
+- `app/templates/stocks/detail.html`: Added `stockNav()` Alpine component with:
+  - Prev/next buttons in breadcrumb row (showing adjacent stock_id)
+  - Keyboard navigation (Left/Right arrows, disabled while editing)
+  - Query param pass-through for consistent navigation context
+
+### Tests (`tests/test_stocks/test_adjacent.py`)
+- 10 tests: basic navigation, boundaries, single stock, tray filter, sort orders, search query, nonexistent stock, tie-breaking
+
+## Test Results
+- 10 new tests pass
+- Full suite: 384 passed, 11 skipped, 0 failures
+
+## Files Created
+- `tests/test_stocks/test_adjacent.py`
+
+## Files Modified
+- `app/stocks/schemas.py` - AdjacentStocksResponse
+- `app/stocks/service.py` - Refactored + get_adjacent_stocks()
+- `app/stocks/router.py` - Adjacent endpoint
+- `app/templates/stocks/list.html` - Filter-aware stock links
+- `app/templates/stocks/detail.html` - Navigation UI
+
+---
+
 # LLM Integration Plugin (Service Layer)
 
 ## Current Task

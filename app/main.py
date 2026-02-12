@@ -428,6 +428,36 @@ async def stocks_import_bdsc_page(
     )
 
 
+@app.get("/stocks/wizard", response_class=HTMLResponse)
+async def stocks_wizard_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    access_token: str | None = Cookie(None),
+):
+    """Render the guided stock entry wizard.
+
+    Args:
+        request: FastAPI request object.
+        db: Database session.
+        access_token: JWT access token from cookie.
+
+    Returns:
+        HTMLResponse or RedirectResponse.
+    """
+    current_user = get_current_user_from_cookie(db, access_token)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    return templates.TemplateResponse(
+        "stocks/wizard.html",
+        {
+            "request": request,
+            "title": "Add Stock (Guided)",
+            "current_user": current_user,
+        },
+    )
+
+
 @app.get("/stocks/{stock_id}", response_class=HTMLResponse)
 async def stock_detail_page(
     stock_id: str,
