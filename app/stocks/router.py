@@ -1,15 +1,18 @@
 """Stocks API routes."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.models import StockOrigin, StockRepository, StockVisibility
 from app.dependencies import CurrentTenantId, CurrentUser, get_db
 from app.stocks.schemas import (
+    AdjacentStocksResponse,
     BulkOwnerUpdate,
     BulkTagsUpdate,
     BulkTrayUpdate,
@@ -145,29 +148,26 @@ async def get_repository_metadata(
     Raises:
         HTTPException: If repository not supported or stock not found.
     """
-    if repository == StockRepository.BDSC:
-        try:
-            from app.plugins.flybase.client import get_bdsc_plugin
+    try:
+        from app.plugins.flybase.client import get_bdsc_plugin
 
-            plugin = get_bdsc_plugin()
-            stock_data = await plugin.get_details(repo_stock_id)
-            if stock_data:
-                return {
-                    "found": True,
-                    "genotype": stock_data.genotype,
-                    "metadata": stock_data.metadata,
-                }
-            return {"found": False, "message": f"Stock {repo_stock_id} not found in BDSC"}
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to fetch BDSC metadata: {e}",
-            )
-    else:
+        plugin = get_bdsc_plugin()
+        stock_data = await plugin.get_details(repo_stock_id, repository=repository.value)
+        if stock_data:
+            return {
+                "found": True,
+                "genotype": stock_data.genotype,
+                "metadata": stock_data.metadata,
+            }
         return {
             "found": False,
-            "message": f"Repository {repository.value} metadata lookup not yet supported",
+            "message": f"Stock {repo_stock_id} not found in {repository.value.upper()}",
         }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch repository metadata: {e}",
+        )
 
 
 @router.get("/search", response_class=HTMLResponse)
@@ -224,6 +224,106 @@ async def search_stocks_html(
             "query": query,
         },
     )
+
+
+logger = logging.getLogger(__name__)
+
+
+class SuggestShortnameRequest(BaseModel):
+    """Request body for suggest-shortname endpoint."""
+
+    genotype: str
+
+
+class SuggestShortnameResponse(BaseModel):
+    """Response body for suggest-shortname endpoint."""
+
+    shortname: str
+
+
+@router.post("/suggest-shortname", response_model=SuggestShortnameResponse)
+async def suggest_shortname(
+    data: SuggestShortnameRequest,
+    current_user: CurrentUser,
+):
+    """Suggest a short phenotype name for a genotype using LLM.
+
+    Args:
+        data: Request containing the genotype string.
+        current_user: Current authenticated user.
+
+    Returns:
+        SuggestShortnameResponse: Suggested shortname.
+
+    Raises:
+        HTTPException: If LLM is not configured or request fails.
+    """
+    from app.llm.service import get_llm_service
+
+    llm = get_llm_service()
+    if not llm.configured:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="AI features are not configured. Set LLM_API_KEY in your environment.",
+        )
+
+    try:
+        shortname = await llm.ask(
+            prompt=f"I have a Drosophila melanogaster with the following genotype: {data.genotype}\n\n"
+            f"Give a descriptive shortname for it. "
+            f"Extract only the important features, simplify construct names, "
+            f"but keep balancers and key genetic components.\n\n"
+            f"Example:\n"
+            f"Genotype: w[*]; P{{y[+t*]=GAL80}}tsh[md621-GAL80]/CyO; TM2/TM6B\n"
+            f"Shortname: w; tsh-GAL80; TM2/TM6B\n\n"
+            f"Return only the shortname, nothing else.",
+            temperature=0.3,
+            max_tokens=50,
+        )
+        return SuggestShortnameResponse(shortname=shortname.strip().strip('"').strip("'"))
+    except ValueError as e:
+        logger.error(f"LLM error suggesting shortname: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate shortname suggestion",
+        )
+
+
+@router.get("/{stock_id}/adjacent", response_model=AdjacentStocksResponse)
+async def get_adjacent_stocks(
+    stock_id: str,
+    service: Annotated[StockService, Depends(get_service)],
+    query: str | None = Query(None, alias="q", description="Search query"),
+    sort_by: str | None = Query(None, description="Field to sort by"),
+    sort_order: str = Query("desc", description="Sort order (asc or desc)"),
+    tag_ids: str | None = Query(None, description="Comma-separated tag IDs"),
+    tray_id: str | None = Query(None, description="Filter by tray ID"),
+):
+    """Get previous and next stocks relative to the given stock.
+
+    Uses the same filter/sort criteria as the list page to maintain
+    consistent navigation order.
+
+    Args:
+        stock_id: Stock UUID.
+        service: Stock service.
+        query: Search query.
+        sort_by: Field to sort by.
+        sort_order: Sort order (asc or desc).
+        tag_ids: Comma-separated tag IDs.
+        tray_id: Filter by tray ID.
+
+    Returns:
+        AdjacentStocksResponse: Previous and next stock IDs.
+    """
+    params = StockSearchParams(
+        query=query,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        tag_ids=tag_ids.split(",") if tag_ids else None,
+        tray_id=tray_id,
+    )
+    return service.get_adjacent_stocks(stock_id, params)
 
 
 @router.get("/{stock_id}", response_model=StockResponse)
