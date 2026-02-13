@@ -65,6 +65,7 @@ class StockBase(BaseModel):
 
     stock_id: str = Field(..., min_length=1, max_length=100)
     genotype: str
+    shortname: str | None = Field(None, max_length=255)
     # Origin tracking
     origin: StockOrigin = StockOrigin.INTERNAL
     repository: StockRepository | None = None  # Only if origin=repository
@@ -90,6 +91,7 @@ class StockUpdate(BaseModel):
 
     stock_id: str | None = Field(None, min_length=1, max_length=100)
     genotype: str | None = None
+    shortname: str | None = Field(None, max_length=255)
     # Origin tracking
     origin: StockOrigin | None = None
     repository: StockRepository | None = None
@@ -158,6 +160,15 @@ class StockSearchParams(BaseModel):
     page_size: int = Field(20, ge=1, le=100)
     sort_by: str | None = Field(None, description="Field to sort by")
     sort_order: str = Field("desc", description="Sort order (asc or desc)")
+
+
+class AdjacentStocksResponse(BaseModel):
+    """Schema for adjacent stock navigation (prev/next)."""
+
+    prev_id: str | None = None
+    prev_stock_id: str | None = None
+    next_id: str | None = None
+    next_stock_id: str | None = None
 
 
 class BulkVisibilityUpdate(BaseModel):

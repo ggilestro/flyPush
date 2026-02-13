@@ -191,6 +191,9 @@ async def search_stocks_html(
         HTMLResponse: Rendered search results partial, or redirect for exact match.
     """
     query = search.strip()
+    # Strip flypush:// prefix from QR code scans so search works like 1D barcodes
+    if query.startswith("flypush://"):
+        query = query[len("flypush://") :]
     if not query or len(query) < 2:
         # Return empty/hidden state for short queries
         return HTMLResponse("")

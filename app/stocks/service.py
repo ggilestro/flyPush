@@ -14,6 +14,7 @@ from app.db.models import (
     Tray,
 )
 from app.stocks.schemas import (
+    AdjacentStocksResponse,
     OwnerInfo,
     StockCreate,
     StockListResponse,
@@ -139,6 +140,7 @@ class StockService:
             id=stock.id,
             stock_id=stock.stock_id,
             genotype=stock.genotype,
+            shortname=stock.shortname,
             origin=stock.origin,
             repository=stock.repository,
             repository_stock_id=stock.repository_stock_id,
@@ -202,6 +204,86 @@ class StockService:
                 Stock.visibility == StockVisibility.PUBLIC,
             )
 
+    def _build_filtered_query(self, params: StockSearchParams):
+        """Build a filtered query from search params (no pagination/ordering).
+
+        Args:
+            params: Search and filter parameters.
+
+        Returns:
+            SQLAlchemy query with all filters applied.
+        """
+        query = (
+            self.db.query(Stock)
+            .filter(self._build_visibility_filter(params.scope))
+            .filter(Stock.is_active == params.is_active)
+        )
+
+        if params.exclude_own:
+            query = query.filter(Stock.tenant_id != self.tenant_id)
+
+        if params.query:
+            search_term = f"%{params.query}%"
+            query = query.filter(
+                or_(
+                    Stock.stock_id.ilike(search_term),
+                    Stock.genotype.ilike(search_term),
+                    Stock.shortname.ilike(search_term),
+                    Stock.notes.ilike(search_term),
+                )
+            )
+
+        if params.origin:
+            query = query.filter(Stock.origin == params.origin)
+
+        if params.repository:
+            query = query.filter(Stock.repository == params.repository)
+
+        if params.tray_id:
+            query = query.filter(Stock.tray_id == params.tray_id)
+
+        if params.owner_id:
+            query = query.filter(Stock.owner_id == params.owner_id)
+
+        if params.visibility:
+            query = query.filter(Stock.visibility == params.visibility)
+
+        if params.tag_ids and params.scope == StockScope.LAB:
+            query = query.filter(Stock.tags.any(Tag.id.in_(params.tag_ids)))
+
+        return query
+
+    def _get_sort_column(self, sort_field: str, query=None):
+        """Resolve sort field name to SQLAlchemy column, optionally joining subqueries.
+
+        Args:
+            sort_field: Field name to sort by.
+            query: Existing query to join subquery onto (for last_flip_at).
+
+        Returns:
+            Tuple of (sort_column, query) - query may have additional joins.
+        """
+        if sort_field == "last_flip_at":
+            last_flip_subq = (
+                self.db.query(FlipEvent.stock_id, func.max(FlipEvent.flipped_at).label("last_flip"))
+                .join(Stock, FlipEvent.stock_id == Stock.id)
+                .filter(Stock.tenant_id == self.tenant_id)
+                .group_by(FlipEvent.stock_id)
+                .subquery()
+            )
+            if query is not None:
+                query = query.outerjoin(last_flip_subq, Stock.id == last_flip_subq.c.stock_id)
+            return last_flip_subq.c.last_flip, query
+
+        sort_column_map = {
+            "stock_id": Stock.stock_id,
+            "genotype": Stock.genotype,
+            "repository": Stock.repository,
+            "created_at": Stock.created_at,
+            "modified_at": Stock.modified_at,
+        }
+        return sort_column_map.get(sort_field, Stock.modified_at), query
+
     def list_stocks(self, params: StockSearchParams) -> StockListResponse:
         """List stocks with filtering and pagination.
 
@@ -211,90 +293,22 @@ class StockService:
         Returns:
             StockListResponse: Paginated stock list.
         """
-        query = (
-            self.db.query(Stock)
-            .options(
-                joinedload(Stock.tags),
-                joinedload(Stock.created_by),
-                joinedload(Stock.modified_by),
-                joinedload(Stock.tray),
-                joinedload(Stock.owner),
-                joinedload(Stock.tenant),
-                joinedload(Stock.flip_events),
-            )
-            .filter(self._build_visibility_filter(params.scope))
-            .filter(Stock.is_active == params.is_active)
+        query = self._build_filtered_query(params).options(
+            joinedload(Stock.tags),
+            joinedload(Stock.created_by),
+            joinedload(Stock.modified_by),
+            joinedload(Stock.tray),
+            joinedload(Stock.owner),
+            joinedload(Stock.tenant),
+            joinedload(Stock.flip_events),
         )
-
-        # Exclude current tenant's stocks (for exchange/browse)
-        if params.exclude_own:
-            query = query.filter(Stock.tenant_id != self.tenant_id)
-
-        # Text search
-        if params.query:
-            search_term = f"%{params.query}%"
-            query = query.filter(
-                or_(
-                    Stock.stock_id.ilike(search_term),
-                    Stock.genotype.ilike(search_term),
-                    Stock.notes.ilike(search_term),
-                )
-            )
-
-        # Filter by origin
-        if params.origin:
-            query = query.filter(Stock.origin == params.origin)
-
-        # Filter by repository
-        if params.repository:
-            query = query.filter(Stock.repository == params.repository)
-
-        # Filter by tray
-        if params.tray_id:
-            query = query.filter(Stock.tray_id == params.tray_id)
-
-        # Filter by owner
-        if params.owner_id:
-            query = query.filter(Stock.owner_id == params.owner_id)
-
-        # Filter by visibility level
-        if params.visibility:
-            query = query.filter(Stock.visibility == params.visibility)
-
-        # Filter by tags (only for lab scope - tags are tenant-specific)
-        if params.tag_ids and params.scope == StockScope.LAB:
-            query = query.filter(Stock.tags.any(Tag.id.in_(params.tag_ids)))
 
         # Count total before pagination
         total = query.count()
 
         # Dynamic sorting
         sort_field = params.sort_by or "modified_at"
-
-        # For last_flip_at, we need to join with FlipEvent table
-        if sort_field == "last_flip_at":
-            # Add subquery for last flip date
-            # Note: FlipEvent doesn't have tenant_id, so we join through Stock
-            last_flip_subq = (
-                self.db.query(FlipEvent.stock_id, func.max(FlipEvent.flipped_at).label("last_flip"))
-                .join(Stock, FlipEvent.stock_id == Stock.id)
-                .filter(Stock.tenant_id == self.tenant_id)
-                .group_by(FlipEvent.stock_id)
-                .subquery()
-            )
-
-            query = query.outerjoin(last_flip_subq, Stock.id == last_flip_subq.c.stock_id)
-            sort_column = last_flip_subq.c.last_flip
-        else:
-            # Regular column sorting
-            sort_column_map = {
-                "stock_id": Stock.stock_id,
-                "genotype": Stock.genotype,
-                "repository": Stock.repository,
-                "created_at": Stock.created_at,
-                "modified_at": Stock.modified_at,
-            }
-            sort_column = sort_column_map.get(sort_field, Stock.modified_at)
+        sort_column, query = self._get_sort_column(sort_field, query)
 
         # Apply sort order
         if params.sort_order == "asc":
@@ -318,6 +332,115 @@ class StockService:
             page_size=params.page_size,
             pages=pages,
         )
+
+    def get_adjacent_stocks(
+        self, stock_id: str, params: StockSearchParams
+    ) -> AdjacentStocksResponse:
+        """Find the previous and next stocks relative to the given stock.
+
+        Uses the same filter/sort criteria as list_stocks to maintain
+        consistent navigation order.
+
+        Args:
+            stock_id: UUID of the current stock.
+            params: Search params defining filters and sort order.
+
+        Returns:
+            AdjacentStocksResponse with prev/next stock IDs.
+        """
+        # Get current stock
+        current = (
+            self.db.query(Stock)
+            .filter(Stock.id == stock_id, Stock.tenant_id == self.tenant_id)
+            .first()
+        )
+        if not current:
+            return AdjacentStocksResponse()
+
+        sort_field = params.sort_by or "modified_at"
+        is_desc = params.sort_order != "asc"
+
+        # Get sort column (without joining onto query - we build our own)
+        sort_column, _ = self._get_sort_column(sort_field)
+
+        # Get current stock's sort value
+        current_sort_value = getattr(current, sort_field, None)
+        if sort_field == "last_flip_at":
+            # Need to compute from flip_events
+            last_flip = (
+                self.db.query(func.max(FlipEvent.flipped_at))
+                .filter(FlipEvent.stock_id == stock_id)
+                .scalar()
+            )
+            current_sort_value = last_flip
+
+        # Build base filtered query, excluding current stock
+        base_query = self._build_filtered_query(params).filter(Stock.id != stock_id)
+
+        # For last_flip_at sorting, join the subquery
+        if sort_field == "last_flip_at":
+            last_flip_subq = (
+                self.db.query(
+                    FlipEvent.stock_id,
+                    func.max(FlipEvent.flipped_at).label("last_flip"),
+                )
+                .join(Stock, FlipEvent.stock_id == Stock.id)
+                .filter(Stock.tenant_id == self.tenant_id)
+                .group_by(FlipEvent.stock_id)
+                .subquery()
+            )
+            base_query = base_query.outerjoin(last_flip_subq, Stock.id == last_flip_subq.c.stock_id)
+            sort_column = last_flip_subq.c.last_flip
+
+        # For desc order: prev has higher sort value, next has lower
+        # For asc order: prev has lower sort value, next has higher
+        # Tie-breaking uses Stock.id for deterministic ordering
+        result = AdjacentStocksResponse()
+
+        if is_desc:
+            # Previous: first row with (value > current) OR (value == current AND id > current_id)
+            prev_query = base_query.filter(
+                or_(
+                    sort_column > current_sort_value,
+                    and_(sort_column == current_sort_value, Stock.id > stock_id),
+                )
+            ).order_by(sort_column.asc(), Stock.id.asc())
+
+            # Next: first row with (value < current) OR (value == current AND id < current_id)
+            next_query = base_query.filter(
+                or_(
+                    sort_column < current_sort_value,
+                    and_(sort_column == current_sort_value, Stock.id < stock_id),
+                )
+            ).order_by(sort_column.desc(), Stock.id.desc())
+        else:
+            # Previous: first row with (value < current) OR (value == current AND id < current_id)
+            prev_query = base_query.filter(
+                or_(
+                    sort_column < current_sort_value,
+                    and_(sort_column == current_sort_value, Stock.id < stock_id),
+                )
+            ).order_by(sort_column.desc(), Stock.id.desc())
+
+            # Next: first row with (value > current) OR (value == current AND id > current_id)
+            next_query = base_query.filter(
+                or_(
+                    sort_column > current_sort_value,
+                    and_(sort_column == current_sort_value, Stock.id > stock_id),
+                )
+            ).order_by(sort_column.asc(), Stock.id.asc())
+
+        prev_stock = prev_query.limit(1).first()
+        next_stock = next_query.limit(1).first()
+
+        if prev_stock:
+            result.prev_id = prev_stock.id
+            result.prev_stock_id = prev_stock.stock_id
+        if next_stock:
+            result.next_id = next_stock.id
+            result.next_stock_id = next_stock.stock_id
+
+        return result
 
     def get_stock(self, stock_id: str, allow_cross_tenant: bool = False) -> Stock | None:
         """Get a stock by ID.
@@ -416,6 +539,7 @@ class StockService:
             tenant_id=self.tenant_id,
             stock_id=data.stock_id,
             genotype=data.genotype,
+            shortname=data.shortname,
             origin=data.origin,
             repository=data.repository,
             repository_stock_id=data.repository_stock_id,
@@ -464,6 +588,8 @@ class StockService:
 
         if data.genotype is not None:
             stock.genotype = data.genotype
+        if data.shortname is not None:
+            stock.shortname = data.shortname
         if data.origin is not None:
             stock.origin = data.origin
         if data.repository is not None:

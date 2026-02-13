@@ -44,6 +44,22 @@
     </div>
 
     <div>
+        <label for="shortname" class="block text-sm font-medium text-gray-700">Short Name</label>
+        <div class="mt-1 flex gap-2">
+            <input type="text" name="shortname" id="shortname"
+                   placeholder="e.g., GFP membrane marker"
+                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+            <button type="button" @click="suggestShortname()"
+                    :disabled="suggestingShortname"
+                    class="inline-flex items-center whitespace-nowrap rounded-md bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span x-show="!suggestingShortname">Suggest</span>
+                <span x-show="suggestingShortname">...</span>
+            </button>
+        </div>
+        <p class="mt-1 text-xs text-gray-500">Short human-readable phenotype summary (2-5 words)</p>
+    </div>
+
+    <div>
         <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
         <input type="text" name="location" id="location"
                placeholder="e.g., Rack A, Shelf 2"
@@ -78,6 +94,37 @@
 function stockForm() {
     return {
         loading: false,
+        suggestingShortname: false,
+
+        async suggestShortname() {
+            const genotype = document.getElementById('genotype').value;
+            if (!genotype) {
+                alert('Please enter a genotype first');
+                return;
+            }
+            this.suggestingShortname = true;
+            try {
+                const response = await fetch('/api/stocks/suggest-shortname', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ genotype })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('shortname').value = data.shortname;
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Failed to suggest shortname');
+                }
+            } catch (error) {
+                console.error('Error suggesting shortname:', error);
+                alert('Failed to suggest shortname');
+            } finally {
+                this.suggestingShortname = false;
+            }
+        },
+
         async submitForm(event) {
             this.loading = true;
             const form = event.target;
@@ -86,6 +133,7 @@ function stockForm() {
             const data = {
                 stock_id: formData.get('stock_id'),
                 genotype: formData.get('genotype'),
+                shortname: formData.get('shortname') || null,
                 source: formData.get('source') || null,
                 location: formData.get('location') || null,
                 notes: formData.get('notes') || null,

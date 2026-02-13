@@ -74,76 +74,20 @@
 
     <!-- Step 1: Upload File & Templates -->
     <div x-show="currentStep === 1" class="space-y-6">
-        <!-- Download Templates -->
+        <!-- Download Template -->
         <div class="bg-white shadow rounded-lg p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-medium text-gray-900">Download a Template (optional)</h2>
-                <span class="text-sm text-gray-500">Choose the format that matches your data</span>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Basic Template -->
-                <div class="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:bg-primary-50 transition-colors">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="font-medium text-gray-900">Basic</h3>
-                            <p class="text-sm text-gray-500 mt-1">stock_id + genotype only</p>
-                            <p class="text-xs text-gray-400 mt-2">For quick internal stock entry</p>
-                        </div>
-                        <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-                    <a href="/api/imports/template?template_type=basic" download
-                       class="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500">
-                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download CSV
-                    </a>
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900">Download Template (optional)</h2>
+                    <p class="text-sm text-gray-500 mt-1">Contains all available columns with example rows. Delete any columns you don't need.</p>
                 </div>
-
-                <!-- Repository Template -->
-                <div class="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:bg-primary-50 transition-colors">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="font-medium text-gray-900">Repository</h3>
-                            <p class="text-sm text-gray-500 mt-1">+ source, stock center ID</p>
-                            <p class="text-xs text-gray-400 mt-2">For BDSC, VDRC, Kyoto stocks</p>
-                        </div>
-                        <svg class="h-8 w-8 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                    </div>
-                    <a href="/api/imports/template?template_type=repository" download
-                       class="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500">
-                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download CSV
-                    </a>
-                </div>
-
-                <!-- Full Template -->
-                <div class="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:bg-primary-50 transition-colors">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="font-medium text-gray-900">Full</h3>
-                            <p class="text-sm text-gray-500 mt-1">+ trays, positions, all fields</p>
-                            <p class="text-xs text-gray-400 mt-2">Complete with physical locations</p>
-                        </div>
-                        <svg class="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                        </svg>
-                    </div>
-                    <a href="/api/imports/template?template_type=full" download
-                       class="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500">
-                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download CSV
-                    </a>
-                </div>
+                <a href="/api/imports/template?template_type=full" download
+                   class="inline-flex items-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-primary-600 border border-primary-300 shadow-sm hover:bg-primary-50 transition-colors">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download Template CSV
+                </a>
             </div>
         </div>
 
@@ -152,7 +96,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-lg font-medium text-gray-900">What should my file look like?</h2>
-                    <p class="text-sm text-gray-500 mt-1">Your CSV or Excel file needs at minimum two columns: a unique ID and the genotype for each stock.</p>
+                    <p class="text-sm text-gray-500 mt-1">Each row needs at minimum either a <strong>genotype</strong> or a stock center reference (<strong>repository</strong> + <strong>stock number</strong>).</p>
                 </div>
                 <button @click="showFormatHelp = !showFormatHelp"
                         class="text-primary-600 hover:text-primary-500 text-sm font-medium flex items-center">
@@ -164,101 +108,105 @@
             </div>
 
             <div x-show="showFormatHelp" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mt-4">
-                <!-- Quick Summary -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <h3 class="font-medium text-blue-900 mb-2">Quick Summary</h3>
-                    <ul class="text-sm text-blue-800 space-y-1">
-                        <li class="flex items-start">
-                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span><strong>Required:</strong> Each row needs either a <strong>repository stock ID</strong> (e.g., BDSC#) <em>or</em> a <strong>genotype</strong> (or both)</span>
-                        </li>
-                        <li class="flex items-start">
-                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span><strong>Stock ID:</strong> Optional - if not provided, we'll auto-generate one (e.g., "BDSC-3605" or "IMP-0001")</span>
-                        </li>
-                        <li class="flex items-start">
-                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span><strong>Format:</strong> CSV (.csv) or Excel (.xlsx) with column headers in the first row</span>
-                        </li>
-                        <li class="flex items-start">
-                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span><strong>Flexible:</strong> Column names don't need to match exactly - you'll map them in the next step</span>
-                        </li>
-                    </ul>
+                <!-- What's Required? -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h3 class="font-medium text-blue-900 mb-2 flex items-center">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-200 text-blue-800 text-xs font-bold mr-2">A</span>
+                            You have the genotype
+                        </h3>
+                        <p class="text-sm text-blue-800">Provide a <strong>genotype</strong> column.</p>
+                        <p class="text-xs text-blue-700 mt-2">For internal or external lab stocks where you already know the genotype.</p>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h3 class="font-medium text-blue-900 mb-2 flex items-center">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-200 text-blue-800 text-xs font-bold mr-2">B</span>
+                            You have a stock center number
+                        </h3>
+                        <p class="text-sm text-blue-800">Provide <strong>repository</strong> + <strong>repository_stock_id</strong> columns.</p>
+                        <p class="text-xs text-blue-700 mt-2">Genotype is fetched from FlyBase automatically. Works with BDSC, VDRC, NIG, Kyoto, and more.</p>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 mb-4 flex items-center gap-4">
+                    <span>Both paths can be combined in the same file.</span>
+                    <span><strong>stock_id</strong> is always optional (auto-generated if omitted).</span>
+                    <span>CSV (.csv) or Excel (.xlsx) with column headers in the first row.</span>
+                    <span>Column names are flexible &mdash; you'll map them in the next step.</span>
                 </div>
 
                 <!-- Example Table -->
                 <div class="mb-4">
                     <h3 class="font-medium text-gray-900 mb-2">Example spreadsheet</h3>
-                    <p class="text-sm text-gray-600 mb-3">Here's what a typical import file might look like. Your column names can vary - we'll help you map them:</p>
+                    <p class="text-sm text-gray-600 mb-3">A realistic mixed-source lab collection. Your column names can vary &mdash; we'll help you map them:</p>
 
                     <div class="overflow-x-auto border rounded-lg">
                         <table class="min-w-full text-sm">
                             <thead class="bg-gray-100">
                                 <tr>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">Stock ID</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">Genotype</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">BDSC#</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">VDRC#</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">From Lab</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">Rack</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">Notes</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">stock_id</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">genotype</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">repository</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">repository_stock_id</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">notes</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-700 border-b">tags</th>
                                 </tr>
                             </thead>
                             <tbody class="font-mono text-xs">
                                 <tr class="bg-white">
                                     <td class="px-3 py-2 border-b text-gray-900">BL-3605</td>
                                     <td class="px-3 py-2 border-b text-gray-900">w[1118]; P{GAL4-elav.L}3</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">BDSC</td>
                                     <td class="px-3 py-2 border-b text-gray-600">3605</td>
-                                    <td class="px-3 py-2 border-b text-gray-600"></td>
-                                    <td class="px-3 py-2 border-b text-gray-600"></td>
-                                    <td class="px-3 py-2 border-b text-gray-600">Rack A</td>
                                     <td class="px-3 py-2 border-b text-gray-600">Elav-GAL4 driver</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">driver</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-3 py-2 border-b text-gray-400 italic"></td>
+                                    <td class="px-3 py-2 border-b text-gray-400 italic"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600">VDRC</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">100821</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">RNAi for dpp</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">rnai</td>
+                                </tr>
+                                <tr class="bg-white">
+                                    <td class="px-3 py-2 border-b text-gray-400 italic"></td>
+                                    <td class="px-3 py-2 border-b text-gray-400 italic"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600">NIG</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">HMS01234</td>
+                                    <td class="px-3 py-2 border-b text-gray-600"></td>
+                                    <td class="px-3 py-2 border-b text-gray-600">screening</td>
                                 </tr>
                                 <tr class="bg-gray-50">
                                     <td class="px-3 py-2 border-b text-gray-900">LAB-001</td>
                                     <td class="px-3 py-2 border-b text-gray-900">y[1] w[*]; Sp/CyO</td>
                                     <td class="px-3 py-2 border-b text-gray-600"></td>
                                     <td class="px-3 py-2 border-b text-gray-600"></td>
-                                    <td class="px-3 py-2 border-b text-gray-600"></td>
-                                    <td class="px-3 py-2 border-b text-gray-600">Rack A</td>
                                     <td class="px-3 py-2 border-b text-gray-600">Balancer stock</td>
+                                    <td class="px-3 py-2 border-b text-gray-600">balancer</td>
                                 </tr>
                                 <tr class="bg-white">
-                                    <td class="px-3 py-2 border-b text-gray-900">VDRC-100821</td>
-                                    <td class="px-3 py-2 border-b text-gray-900">w[1118]; P{KK}dpp</td>
-                                    <td class="px-3 py-2 border-b text-gray-600"></td>
-                                    <td class="px-3 py-2 border-b text-gray-600">100821</td>
-                                    <td class="px-3 py-2 border-b text-gray-600"></td>
-                                    <td class="px-3 py-2 border-b text-gray-600">Rack B</td>
-                                    <td class="px-3 py-2 border-b text-gray-600">RNAi line</td>
-                                </tr>
-                                <tr class="bg-gray-50">
                                     <td class="px-3 py-2 text-gray-900">EXT-042</td>
                                     <td class="px-3 py-2 text-gray-900">yw; UAS-ChR2-XXL</td>
                                     <td class="px-3 py-2 text-gray-600"></td>
                                     <td class="px-3 py-2 text-gray-600"></td>
-                                    <td class="px-3 py-2 text-gray-600">Smith Lab</td>
-                                    <td class="px-3 py-2 text-gray-600">Rack C</td>
-                                    <td class="px-3 py-2 text-gray-600">Optogenetics</td>
+                                    <td class="px-3 py-2 text-gray-600">From Smith Lab</td>
+                                    <td class="px-3 py-2 text-gray-600">optogenetics</td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-500">
+                        <p><strong>Row 1:</strong> Full info (genotype + repository) &mdash; most complete</p>
+                        <p><strong>Rows 2-3:</strong> Repo stocks, no genotype &mdash; fetched from FlyBase. No stock_id &mdash; auto-generated</p>
+                        <p><strong>Row 4:</strong> Internal stock &mdash; genotype only, no repository</p>
+                        <p><strong>Row 5:</strong> External stock &mdash; genotype only, no repository</p>
                     </div>
                 </div>
 
                 <!-- Available Fields -->
                 <div>
                     <h3 class="font-medium text-gray-900 mb-2">Available fields</h3>
-                    <p class="text-sm text-gray-600 mb-3">These are the fields you can import. Column names are flexible - common variations are auto-detected:</p>
+                    <p class="text-sm text-gray-600 mb-3">These are the fields you can import. Column names are flexible &mdash; common variations are auto-detected:</p>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div class="flex items-start p-2 bg-amber-50 rounded border border-amber-300">
@@ -266,7 +214,7 @@
                             <div>
                                 <strong class="text-gray-900">genotype</strong>
                                 <span class="text-amber-700 ml-1">(required if no repo ID)</span>
-                                <p class="text-xs text-gray-600">Full genotype description. Also recognized: "Geno", "Genotypes"</p>
+                                <p class="text-xs text-gray-600">Full genotype description. Also: "Geno", "Genotypes". For repository stocks without a genotype, it's fetched from FlyBase automatically.</p>
                             </div>
                         </div>
                         <div class="flex items-start p-2 bg-amber-50 rounded border border-amber-300">
@@ -274,7 +222,7 @@
                             <div>
                                 <strong class="text-gray-900">repository_stock_id</strong>
                                 <span class="text-amber-700 ml-1">(required if no genotype)</span>
-                                <p class="text-xs text-gray-600">Stock center catalog number. Use repository-specific columns like "BDSC#", "VDRC#", "Kyoto#" - the repository is auto-detected from the column name.</p>
+                                <p class="text-xs text-gray-600">Stock center catalog number. Also: "BDSC#", "VDRC#", "BL#", "Kyoto#", "NIG#" &mdash; the repository is auto-detected from the column name.</p>
                             </div>
                         </div>
                         <div class="p-2 bg-gray-50 rounded border border-gray-200">
@@ -284,7 +232,7 @@
                         </div>
                         <div class="p-2 bg-gray-50 rounded border border-gray-200">
                             <strong class="text-gray-900">repository</strong>
-                            <p class="text-xs text-gray-600">Stock center name (BDSC, VDRC, Kyoto, etc.). Also: "Source", "From", "Stock Center"</p>
+                            <p class="text-xs text-gray-600">Stock center name (BDSC, VDRC, Kyoto, NIG, etc.). Also: "Source", "From", "Stock Center". Not needed if using repo-specific column names like "BDSC#".</p>
                         </div>
                         <div class="p-2 bg-gray-50 rounded border border-gray-200">
                             <strong class="text-gray-900">external_source</strong>

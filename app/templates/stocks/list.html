@@ -24,15 +24,34 @@
         <button type="submit" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
             Search
         </button>
+        <button type="button" @click="toggleDead()"
+                :class="showDead ? 'bg-red-50 text-red-700 ring-red-300' : 'bg-white text-gray-700 ring-gray-300'"
+                class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset hover:bg-gray-50">
+            <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <span x-text="showDead ? 'Showing Dead' : 'Show Dead'"></span>
+        </button>
     </form>
 </div>
 
 <!-- Active Filters Display -->
 <div x-data="activeFilters()" x-show="hasFilters()" class="mb-4 flex gap-2 items-center">
     <span class="text-sm text-gray-600">Filters:</span>
+    <template x-if="showDead">
+        <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-sm text-red-800">
+            Showing dead stocks
+            <button @click="clearFilter('dead')" class="ml-1 text-red-600 hover:text-red-800">&times;</button>
+        </span>
+    </template>
     <template x-if="trayName">
         <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm">
             Tray: <span x-text="trayName" class="font-medium"></span>
+            <button @click="printTrayLabel()" class="ml-1 text-blue-600 hover:text-blue-800" title="Print tray label">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+            </button>
             <button @click="clearFilter('tray')" class="ml-1 text-blue-600 hover:text-blue-800">&times;</button>
         </span>
     </template>
@@ -77,16 +96,26 @@
             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
-            <h3 class="mt-2 text-sm font-semibold text-gray-900">No stocks</h3>
-            <p class="mt-1 text-sm text-gray-500">Get started by creating a new stock.</p>
-            <div class="mt-6">
-                <a href="/stocks/new" class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                    </svg>
-                    Add Stock
-                </a>
-            </div>
+            <template x-if="showDead">
+                <div>
+                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No dead stocks</h3>
+                    <p class="mt-1 text-sm text-gray-500">All your stocks are alive and well.</p>
+                </div>
+            </template>
+            <template x-if="!showDead">
+                <div>
+                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No stocks</h3>
+                    <p class="mt-1 text-sm text-gray-500">Get started by creating a new stock.</p>
+                    <div class="mt-6">
+                        <a href="/stocks/new" class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                            <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                            </svg>
+                            Add Stock
+                        </a>
+                    </div>
+                </div>
+            </template>
         </div>
     </template>
 
@@ -130,26 +159,26 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
                         </th>
-                        <th scope="col" @click="sortBy('stock_id')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                        <th scope="col" @click="sortBy('stock_id')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                             <div class="flex items-center gap-1">
                                 Stock ID
                                 <span x-show="currentSort === 'stock_id'" x-html="sortIcon()"></span>
                             </div>
                         </th>
-                        <th scope="col" @click="sortBy('genotype')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                        <th scope="col" @click="sortBy('genotype')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                             <div class="flex items-center gap-1">
                                 Genotype
                                 <span x-show="currentSort === 'genotype'" x-html="sortIcon()"></span>
                             </div>
                         </th>
-                        <th scope="col" @click="sortBy('repository')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                        <th scope="col" @click="sortBy('repository')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                             <div class="flex items-center gap-1">
                                 Source
                                 <span x-show="currentSort === 'repository'" x-html="sortIcon()"></span>
                             </div>
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                        <th scope="col" @click="sortBy('last_flip_at')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th scope="col" @click="sortBy('last_flip_at')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                             <div class="flex items-center gap-1">
                                 Last Flip
                                 <span x-show="currentSort === 'last_flip_at'" x-html="sortIcon()"></span>
@@ -159,7 +188,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-for="stock in stocks" :key="stock.id">
-                        <tr class="hover:bg-gray-50" :class="{'bg-blue-50': selectedStocks.includes(stock.id)}">
+                        <tr class="hover:bg-gray-50" :class="{'bg-blue-50': selectedStocks.includes(stock.id), 'opacity-60': !stock.is_active}">
                             <td class="px-3 py-4 whitespace-nowrap">
                                 <input type="checkbox"
                                        :value="stock.id"
@@ -177,15 +206,19 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <a :href="'/stocks/' + stock.id" class="text-primary-600 hover:text-primary-900 font-medium" x-text="stock.stock_id"></a>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <a :href="getStockDetailUrl(stock.id)" class="text-primary-600 hover:text-primary-900 font-medium" x-text="stock.stock_id"></a>
+                                    <span x-show="!stock.is_active" class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Dead</span>
+                                </div>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900 max-w-md truncate" x-text="stock.genotype"></div>
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-900 max-w-sm truncate" x-text="stock.genotype"></div>
+                                <div x-show="stock.shortname" class="text-xs text-gray-500 mt-0.5" x-text="stock.shortname"></div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="stock.repository ? stock.repository.toUpperCase() : '-'"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="stock.tray?.name || '-'"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="stock.last_flip_at ? new Date(stock.last_flip_at).toLocaleDateString() : 'Never'"></td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500" x-text="stock.repository ? stock.repository.toUpperCase() : '-'"></td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500" x-text="stock.tray?.name || '-'"></td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500" x-text="stock.last_flip_at ? new Date(stock.last_flip_at).toLocaleDateString() : 'Never'"></td>
                         </tr>
                     </template>
                 </tbody>
@@ -371,8 +404,13 @@
 function stockSearch() {
     return {
         query: '',
+        showDead: new URLSearchParams(window.location.search).get('dead') === '1',
         search() {
-            window.dispatchEvent(new CustomEvent('stocks-search', { detail: { query: this.query } }));
+            window.dispatchEvent(new CustomEvent('stocks-search', { detail: { query: this.query, showDead: this.showDead } }));
+        },
+        toggleDead() {
+            this.showDead = !this.showDead;
+            this.search();
         }
     }
 }
@@ -385,6 +423,7 @@ function stocksList() {
         page: 1,
         pageSize: 20,
         query: '',
+        showDead: false,
         currentSort: 'modified_at',
         sortOrder: 'desc',
         tagFilter: '',
@@ -397,10 +436,12 @@ function stocksList() {
             const urlParams = new URLSearchParams(window.location.search);
             this.tagFilter = urlParams.get('tag') || '';
             this.trayFilter = urlParams.get('tray') || '';
+            this.showDead = urlParams.get('dead') === '1';
 
             // Listen for search events
             window.addEventListener('stocks-search', (e) => {
                 this.query = e.detail.query;
+                this.showDead = e.detail.showDead || false;
                 this.page = 1;
                 this.loadStocks();
             });
@@ -425,6 +466,7 @@ function stocksList() {
                 if (this.query) params.append('query', this.query);
                 if (this.tagFilter) params.append('tag_ids', this.tagFilter);
                 if (this.trayFilter) params.append('tray_id', this.trayFilter);
+                if (this.showDead) params.append('is_active', 'false');
 
                 const response = await fetch('/api/stocks?' + params.toString(), {
                     credentials: 'include'
@@ -470,6 +512,7 @@ function stocksList() {
             if (this.tagFilter) params.set('tag', this.tagFilter);
             if (this.trayFilter) params.set('tray', this.trayFilter);
             if (this.query) params.set('query', this.query);
+            if (this.showDead) params.set('dead', '1');
 
             const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
             history.pushState({}, '', newURL);
@@ -485,6 +528,16 @@ function stocksList() {
                 this.page++;
                 this.loadStocks();
             }
+        },
+        getStockDetailUrl(stockId) {
+            const params = new URLSearchParams();
+            if (this.query) params.set('q', this.query);
+            if (this.currentSort && this.currentSort !== 'modified_at') params.set('sort_by', this.currentSort);
+            if (this.sortOrder && this.sortOrder !== 'desc') params.set('sort_order', this.sortOrder);
+            if (this.tagFilter) params.set('tag_ids', this.tagFilter);
+            if (this.trayFilter) params.set('tray_id', this.trayFilter);
+            const qs = params.toString();
+            return '/stocks/' + stockId + (qs ? '?' + qs : '');
         },
         getFlipStatusDotClass(status) {
             const classes = {
@@ -539,18 +592,21 @@ function stocksList() {
 function activeFilters() {
     return {
         trayName: null,
+        trayId: null,
         tagName: null,
+        showDead: false,
         init() {
             const urlParams = new URLSearchParams(window.location.search);
-            const trayId = urlParams.get('tray');
+            this.trayId = urlParams.get('tray');
             const tagId = urlParams.get('tag');
+            this.showDead = urlParams.get('dead') === '1';
 
             // Fetch tray/tag names if we have IDs
-            if (trayId) this.fetchTrayName(trayId);
+            if (this.trayId) this.fetchTrayName(this.trayId);
             if (tagId) this.fetchTagName(tagId);
         },
         hasFilters() {
-            return this.trayName || this.tagName;
+            return this.trayName || this.tagName || this.showDead;
         },
         async fetchTrayName(trayId) {
             try {
@@ -573,6 +629,25 @@ function activeFilters() {
                 }
             } catch (e) {
                 console.error('Failed to fetch tag name:', e);
+            }
+        },
+        async printTrayLabel() {
+            if (!this.trayId) return;
+            try {
+                const statusResp = await fetch('/api/labels/agents/status/online', { credentials: 'include' });
+                const statusData = await statusResp.json();
+                if (statusData.has_online_agent) {
+                    await fetch('/api/labels/print-tray', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ tray_id: this.trayId })
+                    });
+                } else {
+                    window.open(`/api/labels/tray/${this.trayId}/pdf`, '_blank');
+                }
+            } catch (error) {
+                console.error('Error printing tray label:', error);
             }
         },
         clearFilter(type) {
