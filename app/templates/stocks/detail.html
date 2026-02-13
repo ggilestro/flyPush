@@ -186,6 +186,17 @@
                             <dd class="text-sm text-gray-900">
                                 <span x-text="stock.repository?.toUpperCase() || '-'"></span>
                                 <span x-show="stock.repository_stock_id" class="text-gray-500">#<span x-text="stock.repository_stock_id"></span></span>
+                                <template x-if="stock.repository_stock_id">
+                                    <span class="inline-flex gap-1.5 ml-1.5">
+                                        <a :href="getStockCenterUrl(stock.repository, stock.repository_stock_id)"
+                                           target="_blank" rel="noopener"
+                                           class="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                                           x-text="stock.repository?.toUpperCase()"></a>
+                                        <a :href="'https://flybase.org/search/' + stock.repository?.toUpperCase() + ':' + stock.repository_stock_id"
+                                           target="_blank" rel="noopener"
+                                           class="text-blue-600 hover:text-blue-800 text-xs font-medium">FlyBase</a>
+                                    </span>
+                                </template>
                             </dd>
                         </div>
                         <div x-show="stock.origin === 'external'">
@@ -1031,6 +1042,18 @@ function stockDetail() {
                 'public': 'bg-green-100 text-green-800'
             };
             return classes[visibility] || 'bg-gray-100 text-gray-800';
+        },
+
+        getStockCenterUrl(repository, stockId) {
+            const urls = {
+                'bdsc': `https://bdsc.indiana.edu/Home/Search?SearchTerms=${stockId}`,
+                'vdrc': `https://stockcenter.vdrc.at/control/product/~VIEW_INDEX~0/~VIEW_SIZE~100/~product_id~${stockId}`,
+                'kyoto': `https://kyotofly.kit.jp/cgi-bin/stocks/search_res_det.cgi?DB_NUM=1&DESSION_ID=0&STOCK_NO=${stockId}`,
+                'nig': `https://shigen.nig.ac.jp/fly/nigfly/stock?stockId=${stockId}`,
+                'dgrc': `https://dgrc.bio.indiana.edu/product/View?product=${stockId}`,
+                'trip': `https://fgr.hms.harvard.edu/fly-in-stock?search=${stockId}`,
+            };
+            return urls[repository] || `https://flybase.org/search/${(repository || '').toUpperCase()}:${stockId}`;
         }
     }
 }
