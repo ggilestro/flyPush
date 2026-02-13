@@ -34,6 +34,8 @@ class LLMService:
         model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        timeout: float | None = None,
+        response_format: dict | None = None,
     ) -> LLMResponse:
         """Send a chat completion request to the LLM API.
 
@@ -42,6 +44,8 @@ class LLMService:
             model: Model identifier (defaults to settings.llm_default_model).
             temperature: Sampling temperature (defaults to settings.llm_temperature).
             max_tokens: Maximum tokens to generate (defaults to settings.llm_max_tokens).
+            timeout: Request timeout in seconds.
+            response_format: Optional response format spec (e.g. {"type": "json_object"}).
 
         Returns:
             LLMResponse: The model's response with content, usage, and metadata.
@@ -69,6 +73,8 @@ class LLMService:
             "temperature": resolved_temperature,
             "max_tokens": resolved_max_tokens,
         }
+        if response_format:
+            payload["response_format"] = response_format
 
         headers = {
             "Authorization": f"Bearer {self.settings.llm_api_key}",
@@ -76,7 +82,7 @@ class LLMService:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=timeout or 60.0) as client:
                 response = await client.post(
                     f"{self.settings.llm_base_url}/chat/completions",
                     json=payload,
@@ -85,7 +91,13 @@ class LLMService:
                 response.raise_for_status()
                 data = response.json()
 
-            content = data["choices"][0]["message"]["content"]
+            message = data["choices"][0]["message"]
+            content = message.get("content") or ""
+            # Reasoning models may return output in different fields
+            reasoning_content = message.get("reasoning_content") or message.get("reasoning") or ""
+            if not content and reasoning_content:
+                logger.info("Using reasoning field as primary content (reasoning model)")
+                content = reasoning_content
             usage = data.get("usage", {})
 
             return LLMResponse(
@@ -125,6 +137,8 @@ class LLMService:
         model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        timeout: float | None = None,
+        response_format: dict | None = None,
     ) -> str:
         """Convenience method: send a prompt and get back just the text response.
 
@@ -134,6 +148,8 @@ class LLMService:
             model: Model identifier override.
             temperature: Sampling temperature override.
             max_tokens: Maximum tokens override.
+            timeout: Request timeout in seconds.
+            response_format: Optional response format spec (e.g. {"type": "json_object"}).
 
         Returns:
             str: The model's text response.
@@ -151,6 +167,8 @@ class LLMService:
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
+            timeout=timeout,
+            response_format=response_format,
         )
         return response.content
 

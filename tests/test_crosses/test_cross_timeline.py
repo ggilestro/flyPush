@@ -1,5 +1,6 @@
 """Tests for cross timeline features (flip/virgin collection tracking, genotype suggestions)."""
 
+import json
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
@@ -233,14 +234,15 @@ class TestSuggestGenotypes:
         mock_llm = mock_get_llm.return_value
         mock_llm.configured = True
         mock_llm.ask = AsyncMock(
-            return_value=(
-                "REASONING:\n"
-                "da-GAL4 is on chr 3, UAS-mCD8-GFP is on chr 2.\n"
-                "CyO is a chr 2 balancer.\n\n"
-                "GENOTYPES:\n"
-                "w; UAS-mCD8-GFP/CyO; da-GAL4/+\n"
-                "w; UAS-mCD8-GFP/+; da-GAL4/+\n"
-                "w; CyO/+; da-GAL4/+"
+            return_value=json.dumps(
+                {
+                    "reasoning": "da-GAL4 is on chr 3, UAS-mCD8-GFP is on chr 2. CyO is a chr 2 balancer.",
+                    "genotypes": [
+                        "w; UAS-mCD8-GFP/CyO; da-GAL4/+",
+                        "w; UAS-mCD8-GFP/+; da-GAL4/+",
+                        "w; CyO/+; da-GAL4/+",
+                    ],
+                }
             )
         )
 

@@ -1,5 +1,6 @@
 """Crosses API routes."""
 
+import json
 import logging
 from typing import Annotated
 
@@ -90,52 +91,59 @@ async def suggest_genotypes(
 {male_info}
 
 Instructions:
-1. First, analyze each component in both genotypes and identify which chromosome each is on. Use your knowledge of Drosophila genetics (e.g., CyO is a chr 2 balancer, TM3/TM6B are chr 3 balancers, attP2 is on chr 3L, attP40 is on chr 2, X-linked markers like w, y, f, etc.).
-2. Then predict 3-5 of the most useful/common F1 offspring genotypes researchers would want.
+1. Analyze each component in both genotypes and identify which chromosome each is on. Use your knowledge of Drosophila genetics (e.g., CyO is a chr 2 balancer, TM3/TM6B are chr 3 balancers, attP2 is on chr 3L, attP40 is on chr 2, X-linked markers like w, y, f, etc.).
+2. Predict 3-5 of the most useful/common F1 offspring genotypes researchers would want.
 3. Use standard Drosophila notation.
 
-Return your response in this exact format:
-REASONING:
-[Your chromosome analysis here - be concise]
-
-GENOTYPES:
-[genotype 1]
-[genotype 2]
-[genotype 3]
-..."""
+You MUST respond with a JSON object in this exact format (no other text):
+{{
+  "reasoning": "Brief chromosome analysis explaining your logic",
+  "genotypes": ["genotype 1", "genotype 2", "genotype 3"]
+}}"""
 
     try:
+        # Reasoning models need more tokens and time (reasoning + answer share the budget)
+        is_reasoning_model = (
+            bool(settings.llm_reasoning_model) and model == settings.llm_reasoning_model
+        )
+        token_budget = 4096 if is_reasoning_model else 1024
+        request_timeout = 180.0 if is_reasoning_model else 60.0
+
         response = await llm.ask(
             prompt=prompt,
             model=model,
             temperature=0.3,
-            max_tokens=1024,
+            max_tokens=token_budget,
+            timeout=request_timeout,
+            response_format={"type": "json_object"},
         )
 
-        # Parse the structured response
-        reasoning = None
-        suggestions = []
+        # Strip markdown code fences if present (e.g. ```json ... ```)
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            # Remove opening fence (```json or ```)
+            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3].strip()
 
-        if "REASONING:" in response and "GENOTYPES:" in response:
-            parts = response.split("GENOTYPES:")
-            reasoning_part = parts[0].replace("REASONING:", "").strip()
-            genotypes_part = parts[1].strip()
-            reasoning = reasoning_part
-            suggestions = [
-                line.strip()
-                for line in genotypes_part.split("\n")
-                if line.strip() and not line.strip().startswith("#")
-            ]
-        else:
-            # Fallback: treat each line as a genotype
+        # Parse JSON response
+        try:
+            result = json.loads(cleaned)
+            suggestions = result.get("genotypes", [])[:5]
+            reasoning = result.get("reasoning")
+        except json.JSONDecodeError:
+            logger.warning(
+                f"LLM returned non-JSON, falling back to text parsing: {response[:200]!r}"
+            )
+            # Fallback: try to extract from text
             suggestions = [
                 line.strip()
                 for line in response.split("\n")
-                if line.strip() and not line.strip().startswith("#")
-            ]
-
-        # Limit to 5 suggestions
-        suggestions = suggestions[:5]
+                if line.strip()
+                and not line.strip().startswith(("#", "{", "}", '"'))
+                and len(line.strip()) > 5
+            ][:5]
+            reasoning = None
 
         return SuggestGenotypesResponse(
             suggestions=suggestions,
