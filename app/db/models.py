@@ -162,6 +162,23 @@ class FlipStatus(str, enum.Enum):
     NEVER = "never"  # Never been flipped
 
 
+class PlanTier(str, enum.Enum):
+    """Subscription plan tier enumeration."""
+
+    LIGHT = "light"
+    PRO = "pro"
+    LIFE = "life"
+
+
+class SubscriptionStatus(str, enum.Enum):
+    """Subscription status enumeration."""
+
+    TRIALING = "trialing"
+    ACTIVE = "active"
+    PAST_DUE = "past_due"
+    CANCELLED = "cancelled"
+
+
 class Organization(Base):
     """Organization model representing a parent entity for labs.
 
@@ -246,6 +263,20 @@ class Tenant(Base):
     flip_warning_days: Mapped[int] = mapped_column(Integer, default=21, server_default="21")
     flip_critical_days: Mapped[int] = mapped_column(Integer, default=31, server_default="31")
     flip_reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+
+    # Subscription / billing
+    plan: Mapped[PlanTier] = mapped_column(
+        Enum(PlanTier, values_callable=lambda x: [e.value for e in x]),
+        default=PlanTier.PRO,
+        server_default="pro",
+    )
+    subscription_status: Mapped[SubscriptionStatus] = mapped_column(
+        Enum(SubscriptionStatus, values_callable=lambda x: [e.value for e in x]),
+        default=SubscriptionStatus.TRIALING,
+        server_default="trialing",
+    )
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    max_users_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Relationships
     organization: Mapped[Optional["Organization"]] = relationship(

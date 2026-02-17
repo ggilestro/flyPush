@@ -7,6 +7,18 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from app.db.models import UserRole
 
 
+class PlanInfo(BaseModel):
+    """Schema for subscription plan information."""
+
+    tier: str
+    tier_display: str
+    max_users: int | None = None
+    current_users: int
+    subscription_status: str
+    trial_ends_at: datetime | None = None
+    is_trialing: bool
+
+
 class UserInvite(BaseModel):
     """Schema for inviting a new user."""
 
@@ -64,6 +76,8 @@ class TenantResponse(BaseModel):
     country: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    # Subscription plan info
+    plan: PlanInfo | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

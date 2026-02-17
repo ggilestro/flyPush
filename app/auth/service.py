@@ -3,8 +3,9 @@
 import logging
 import re
 import secrets
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
 
 from app.auth.schemas import (
@@ -19,6 +20,7 @@ from app.auth.utils import (
     get_password_hash,
     verify_password,
 )
+from app.billing.plans import check_user_limit
 from app.db.models import Tenant, User, UserRole, UserStatus
 from app.email.service import get_email_service
 
@@ -281,6 +283,7 @@ class AuthService:
             invitation_token_created_at=datetime.now(UTC),
             city=data.city,
             country=data.country,
+            trial_ends_at=datetime.now(UTC) + timedelta(days=182),
         )
 
         # Try to find or create the organization
@@ -379,6 +382,14 @@ class AuthService:
         if existing_user:
             raise ValueError("Email already registered in this lab.")
 
+        # Check user quota
+        current_count = (
+            self.db.query(sa_func.count(User.id)).filter(User.tenant_id == tenant.id).scalar()
+        )
+        check_user_limit(
+            tenant.plan, tenant.subscription_status, current_count, tenant.max_users_override
+        )
+
         # Create user (not email verified yet)
         user = User(
             tenant_id=tenant.id,
@@ -453,7 +464,7 @@ class AuthService:
             tuple: Created user, None, and status message.
 
         Raises:
-            ValueError: If email already exists in the tenant.
+            ValueError: If email already exists in the tenant or user limit reached.
         """
         from app.tenants.service import TenantService
 
@@ -465,6 +476,16 @@ class AuthService:
         )
         if existing_user:
             raise ValueError("Email already registered in this lab.")
+
+        # Check user quota
+        tenant = self.db.query(Tenant).filter(Tenant.id == invitation.tenant_id).first()
+        if tenant:
+            current_count = (
+                self.db.query(sa_func.count(User.id)).filter(User.tenant_id == tenant.id).scalar()
+            )
+            check_user_limit(
+                tenant.plan, tenant.subscription_status, current_count, tenant.max_users_override
+            )
 
         # Create user (auto-approved, email pre-verified via invitation)
         user = User(
@@ -533,6 +554,7 @@ class AuthService:
             invitation_token_created_at=datetime.now(UTC),
             city=data.city,
             country=data.country,
+            trial_ends_at=datetime.now(UTC) + timedelta(days=182),
         )
         self.db.add(tenant)
         self.db.flush()

@@ -8,12 +8,22 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth.utils import get_password_hash
-from app.db.models import Invitation, InvitationStatus, InvitationType, Stock, Tenant, User
+from app.billing.plans import PLAN_DISPLAY_NAMES, check_user_limit, get_max_users
+from app.db.models import (
+    Invitation,
+    InvitationStatus,
+    InvitationType,
+    Stock,
+    SubscriptionStatus,
+    Tenant,
+    User,
+)
 from app.tenants.schemas import (
     InvitationCreate,
     InvitationResponse,
     InvitationValidation,
     OrganizationInfo,
+    PlanInfo,
     TenantResponse,
     UserInvite,
     UserListResponse,
@@ -72,6 +82,18 @@ class TenantService:
                 slug=tenant.organization.slug,
             )
 
+        plan_info = PlanInfo(
+            tier=tenant.plan.value,
+            tier_display=PLAN_DISPLAY_NAMES.get(tenant.plan, tenant.plan.value),
+            max_users=get_max_users(
+                tenant.plan, tenant.subscription_status, tenant.max_users_override
+            ),
+            current_users=user_count,
+            subscription_status=tenant.subscription_status.value,
+            trial_ends_at=tenant.trial_ends_at,
+            is_trialing=tenant.subscription_status == SubscriptionStatus.TRIALING,
+        )
+
         return TenantResponse(
             id=tenant.id,
             name=tenant.name,
@@ -86,6 +108,7 @@ class TenantService:
             country=tenant.country,
             latitude=tenant.latitude,
             longitude=tenant.longitude,
+            plan=plan_info,
         )
 
     def update_tenant(self, name: str | None = None) -> Tenant | None:
@@ -158,7 +181,7 @@ class TenantService:
             tuple: Created user and temporary password.
 
         Raises:
-            ValueError: If email already exists.
+            ValueError: If email already exists or user limit reached.
         """
         # Check if email exists in tenant
         existing = (
@@ -168,6 +191,16 @@ class TenantService:
         )
         if existing:
             raise ValueError("Email already exists in this organization")
+
+        # Check user quota
+        tenant = self.get_tenant()
+        if tenant:
+            current_count = (
+                self.db.query(func.count(User.id)).filter(User.tenant_id == self.tenant_id).scalar()
+            )
+            check_user_limit(
+                tenant.plan, tenant.subscription_status, current_count, tenant.max_users_override
+            )
 
         # Generate temporary password
         temp_password = secrets.token_urlsafe(12)
@@ -305,7 +338,7 @@ class TenantService:
         if existing:
             raise ValueError(f"A pending invitation already exists for {data.email}")
 
-        # For LAB_MEMBER, check email not already a member
+        # For LAB_MEMBER, check email not already a member and check quota
         if inv_type == InvitationType.LAB_MEMBER:
             existing_user = (
                 self.db.query(User)
@@ -314,6 +347,13 @@ class TenantService:
             )
             if existing_user:
                 raise ValueError(f"{data.email} is already a member of this lab")
+
+            current_count = (
+                self.db.query(func.count(User.id)).filter(User.tenant_id == self.tenant_id).scalar()
+            )
+            check_user_limit(
+                tenant.plan, tenant.subscription_status, current_count, tenant.max_users_override
+            )
 
         # Create invitation
         token = secrets.token_hex(32)
