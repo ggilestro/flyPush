@@ -29,11 +29,25 @@ A modern SaaS web application for managing *Drosophila* (fruit fly) stocks in re
 - **One-click import** - search external databases and import directly to your collection
 - **Automatic metadata** - FlyBase IDs, genotypes, and source URLs included
 
-### Cross Planning
-- **Plan genetic crosses** between stocks in your collection
-- **Track cross status** - planned, in progress, completed, or failed
-- **Link offspring** - connect completed crosses to resulting stocks
-- **Cross history** - full audit trail of breeding experiments
+### Cross Planning & Tracking
+- **Guided cross wizard** - 5-step planner to select parents, define outcome type, set timeline, and review
+- **Outcome types** - ephemeral (discard), intermediate (use in further crosses), or new stock (keep permanently)
+- **Lifecycle tracking** - plan → in progress → completed/failed, with automatic placeholder stock creation
+- **Timeline management** - configure flip days, virgin collection windows, and planned dates per cross
+- **Overdue alerts** - visual warnings when flip or virgin collection milestones are past due
+- **AI genotype prediction** - LLM-powered offspring genotype suggestions based on parental genetics
+- **Cross history** - full audit trail of breeding experiments with linked offspring
+
+### Flip (Vial Maintenance) Tracking
+- **One-click flip logging** - record flip events per stock, or automatically when printing a label
+- **Maintenance dashboard** - see which stocks need flipping, sorted by urgency (warning, critical, never flipped)
+- **Configurable thresholds** - set lab-wide warning and critical day intervals
+
+### Email Reminders & Notifications
+- **Cross reminders** - automated emails when vial flips or virgin collections are due
+- **Flip maintenance alerts** - weekly digest of stocks needing attention, categorized by urgency
+- **Configurable thresholds** - set your lab's own warning and critical day intervals for flip tracking
+- **Account notifications** - email verification, password resets, and team invitations
 
 ### Label Generation
 - **QR codes** - generate scannable codes for vial labeling
