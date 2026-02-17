@@ -1,5 +1,10 @@
 /* App - Custom CSS */
 
+/* Hide Alpine.js elements until initialized */
+[x-cloak] {
+    display: none !important;
+}
+
 /* HTMX loading indicator */
 .htmx-indicator {
     display: none;
