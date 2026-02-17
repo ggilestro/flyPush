@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     # Application
     app_name: str = "flyRoom"
+    app_base_url: str = "https://app.flyroom.net"
     debug: bool = False
     environment: Literal["development", "staging", "production"] = "development"
 

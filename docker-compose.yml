@@ -1,11 +1,13 @@
 services:
-  app:
+  flyroom-app:
     build: .
     expose:
       - 8000
+    container_name: flyroom-app
     environment:
-      - DATABASE_URL=mysql+pymysql://flystocks:${DB_PASSWORD}@db/flystocks
+      - DATABASE_URL=mysql+pymysql://flystocks:${DB_PASSWORD}@flyroom-db/flystocks
       - SECRET_KEY=${SECRET_KEY}
+      - APP_BASE_URL=${APP_BASE_URL}
       - DEBUG=${DEBUG:-false}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
@@ -19,7 +21,7 @@ services:
       - LLM_DEFAULT_MODEL=${LLM_DEFAULT_MODEL}
       - LLM_REASONING_MODEL=${LLM_REASONING_MODEL}
     depends_on:
-      db:
+      flyroom-db:
         condition: service_healthy
     volumes:
       - ./uploads:/app/uploads
@@ -31,23 +33,25 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
 
-  admin:
+  flyroom-admin:
     build:
       context: .
       dockerfile: admin/Dockerfile
     expose:
       - 8001
+    container_name: flyroom-admin
     environment:
-      - DATABASE_URL=mysql+pymysql://flystocks:${DB_PASSWORD}@db/flystocks
+      - DATABASE_URL=mysql+pymysql://flystocks:${DB_PASSWORD}@flyroom-db/flystocks
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
       - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
-      - DB_HOST=db
+      - DB_HOST=flyroom-db
       - DB_USER=flystocks
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=flystocks
+      - APP_BASE_URL=${APP_BASE_URL}
     depends_on:
-      db:
+      flyroom-db:
         condition: service_healthy
     volumes:
       - ./app:/app/app:ro
@@ -58,8 +62,9 @@ services:
     command: uvicorn admin_app.main:app --host 0.0.0.0 --port 8001 --reload
     restart: unless-stopped
 
-  db:
+  flyroom-db:
     image: mariadb:10.11
+    container_name: flyroom-db
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_DATABASE=flystocks

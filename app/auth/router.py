@@ -18,6 +18,7 @@ from app.auth.schemas import (
     UserUpdate,
 )
 from app.auth.service import AuthService, get_auth_service
+from app.config import get_settings
 from app.dependencies import CurrentAdmin, CurrentUser, get_db
 
 router = APIRouter()
@@ -86,7 +87,7 @@ async def register(
     """
     try:
         # Get base URL for verification email
-        base_url = str(request.base_url).rstrip("/")
+        base_url = get_settings().app_base_url.rstrip("/")
 
         user, token, message = service.register(data, base_url)
 
@@ -167,7 +168,7 @@ async def resend_verification(
         )
 
     # Send verification email
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_settings().app_base_url.rstrip("/")
     service.send_verification_email(user, base_url)
 
     return EmailVerificationResponse(
@@ -346,7 +347,7 @@ async def forgot_password(
     Returns:
         dict: Success message (always returns success to prevent email enumeration).
     """
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_settings().app_base_url.rstrip("/")
     service.request_password_reset(data.email, base_url)
 
     # Always return success to prevent email enumeration
@@ -399,7 +400,7 @@ async def get_invitation_link(
     Returns:
         InvitationResponse: Invitation URL and token.
     """
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_settings().app_base_url.rstrip("/")
     url = service.get_invitation_link(current_user.tenant, base_url)
     token = current_user.tenant.invitation_token
 
@@ -428,7 +429,7 @@ async def regenerate_invitation_link(
         InvitationResponse: New invitation URL and token.
     """
     new_token = service.regenerate_invitation_token(current_user.tenant)
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_settings().app_base_url.rstrip("/")
 
     return InvitationResponse(
         invitation_url=f"{base_url}/register?invite={new_token}",
