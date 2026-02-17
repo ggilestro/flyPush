@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% set active_page = "users" %}
+{% block title %}Users{% endblock %}
+{% block page_title %}Users ({{ analytics.total }}){% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+{% endblock %}
+
+{% block content %}
+<!-- KPI Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-4">
+        <p class="text-xs text-gray-500">Total Users</p>
+        <p class="text-2xl font-bold text-gray-900">{{ analytics.total }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+        <p class="text-xs text-gray-500">Active</p>
+        <p class="text-2xl font-bold text-green-600">{{ analytics.active }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+        <p class="text-xs text-gray-500">Verified</p>
+        <p class="text-2xl font-bold text-blue-600">{{ analytics.verified }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+        <p class="text-xs text-gray-500">Admins</p>
+        <p class="text-2xl font-bold text-amber-600">{{ analytics.admins }}</p>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white rounded-lg shadow p-5">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">By Status</h3>
+        <canvas id="statusChart" height="180"></canvas>
+    </div>
+    <div class="bg-white rounded-lg shadow p-5">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Monthly Registrations</h3>
+        <canvas id="monthlyChart" height="180"></canvas>
+    </div>
+</div>
+
+<!-- Per-Tenant Breakdown -->
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-5 py-3 border-b border-gray-200">
+        <h3 class="text-sm font-semibold text-gray-700">Users per Tenant</h3>
+    </div>
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tenant</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Users</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for t in analytics.per_tenant %}
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='/tenants/{{ t.tenant_id }}'">
+                <td class="px-4 py-2 text-sm text-gray-900">{{ t.tenant_name }}</td>
+                <td class="px-4 py-2">
+                    <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
+                        {% if t.plan == 'life' %}bg-purple-100 text-purple-800
+                        {% elif t.plan == 'pro' %}bg-amber-100 text-amber-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ t.plan | upper }}
+                    </span>
+                </td>
+                <td class="px-4 py-2 text-sm text-gray-600 text-right">{{ t.user_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const COLORS = ['rgb(245,158,11)', 'rgb(16,185,129)', 'rgb(59,130,246)', 'rgb(239,68,68)', 'rgb(107,114,128)'];
+
+// Status chart
+const statusData = {{ analytics.by_status | tojson }};
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(statusData).map(s => s.toUpperCase()),
+        datasets: [{ data: Object.values(statusData), backgroundColor: COLORS }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+
+// Monthly chart
+const monthlyData = {{ analytics.monthly | tojson }};
+new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: {
+        labels: monthlyData.map(d => d.month),
+        datasets: [{ label: 'New Users', data: monthlyData.map(d => d.count), backgroundColor: 'rgb(245,158,11)' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% endblock %}

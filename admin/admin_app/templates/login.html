@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — flyRoom Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-full flex items-center justify-center">
+    <div class="w-full max-w-sm">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-amber-400">flyRoom Admin</h1>
+            <p class="text-gray-500 text-sm mt-1">Super Admin Console</p>
+        </div>
+        <form method="post" action="/login" class="bg-gray-800 rounded-lg shadow-xl p-8 space-y-5">
+            {% if error %}
+            <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded text-sm">
+                {{ error }}
+            </div>
+            {% endif %}
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-300 mb-1">Username</label>
+                <input type="text" id="username" name="username" required autofocus
+                       class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                <input type="password" id="password" name="password" required
+                       class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+            </div>
+            <button type="submit"
+                    class="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded transition-colors">
+                Sign In
+            </button>
+        </form>
+    </div>
+</body>
+</html>

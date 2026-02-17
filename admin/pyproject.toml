@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flyroom-admin"
+version = "0.1.0"
+description = "flyRoom Super Admin Console"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "pymysql>=1.1.0",
+    "jinja2>=3.1.0",
+    "itsdangerous>=2.1.0",
+    "bcrypt>=4.0.0",
+    "python-multipart>=0.0.6",
+    "pydantic-settings>=2.0.0",
+]
+
+[tool.setuptools]
+packages = ["admin_app", "admin_app.services"]

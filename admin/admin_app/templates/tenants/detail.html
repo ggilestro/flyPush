@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% set active_page = "tenants" %}
+{% block title %}{{ tenant.name }}{% endblock %}
+{% block page_title %}{{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div x-data="tenantEditor()" class="space-y-6">
+    <!-- Breadcrumb -->
+    <div class="text-sm text-gray-500">
+        <a href="/tenants" class="hover:text-amber-600">Tenants</a> / {{ tenant.name }}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Info & Stats -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <p class="text-xs text-gray-500">Users</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ tenant.user_count }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <p class="text-xs text-gray-500">Stocks</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ tenant.stock_count }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <p class="text-xs text-gray-500">Crosses</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ tenant.cross_count }}</p>
+                </div>
+            </div>
+
+            <!-- Details -->
+            <div class="bg-white rounded-lg shadow p-5">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Details</h3>
+                <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div>
+                        <dt class="text-gray-500">Slug</dt>
+                        <dd class="text-gray-900 font-mono">{{ tenant.slug }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">Location</dt>
+                        <dd class="text-gray-900">{% if tenant.city %}{{ tenant.city }}, {% endif %}{{ tenant.country or '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">Created</dt>
+                        <dd class="text-gray-900">{{ tenant.created_at[:10] if tenant.created_at else '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">Coordinates</dt>
+                        <dd class="text-gray-900">
+                            {% if tenant.latitude %}{{ "%.4f"|format(tenant.latitude) }}, {{ "%.4f"|format(tenant.longitude) }}{% else %}—{% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Users Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-5 py-3 border-b border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-700">Users ({{ tenant.users | length }})</h3>
+                </div>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Last Login</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for u in tenant.users %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-900">{{ u.full_name }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">{{ u.email }}</td>
+                            <td class="px-4 py-2">
+                                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
+                                    {% if u.role == 'admin' %}bg-amber-100 text-amber-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ (u.role or '') | upper }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2">
+                                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
+                                    {% if u.status == 'approved' %}bg-green-100 text-green-800
+                                    {% elif u.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ (u.status or '') | upper }}
+                                </span>
+                                {% if not u.is_active %}
+                                <span class="text-xs text-red-500 ml-1">INACTIVE</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-sm text-gray-400">{{ u.last_login[:10] if u.last_login else 'Never' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-4 text-center text-gray-400 text-sm">No users.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Edit Form -->
+        <div>
+            <div class="bg-white rounded-lg shadow p-5 sticky top-6">
+                <h3 class="text-sm font-semibold text-gray-700 mb-4">Edit Tenant</h3>
+                <div x-show="message" class="mb-3 px-3 py-2 rounded text-sm"
+                     :class="success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                     x-text="message" x-transition></div>
+                <form @submit.prevent="save" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Plan</label>
+                        <select x-model="form.plan" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-amber-500 focus:border-amber-500">
+                            <option value="light">Light</option>
+                            <option value="pro">Pro</option>
+                            <option value="life">Life</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Subscription Status</label>
+                        <select x-model="form.subscription_status" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-amber-500 focus:border-amber-500">
+                            <option value="trialing">Trialing</option>
+                            <option value="active">Active</option>
+                            <option value="past_due">Past Due</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Trial Ends At</label>
+                        <input type="date" x-model="form.trial_ends_at"
+                               class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Max Users Override</label>
+                        <input type="number" x-model="form.max_users_override" placeholder="Default per plan"
+                               class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" x-model="form.is_active" id="is_active" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                        <label for="is_active" class="text-sm text-gray-700">Active</label>
+                    </div>
+                    <button type="submit" :disabled="saving"
+                            class="w-full py-2 bg-amber-600 text-white rounded text-sm hover:bg-amber-500 transition-colors disabled:opacity-50">
+                        <span x-show="!saving">Save Changes</span>
+                        <span x-show="saving">Saving...</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function tenantEditor() {
+    return {
+        form: {
+            plan: '{{ tenant.plan or "pro" }}',
+            subscription_status: '{{ tenant.subscription_status or "trialing" }}',
+            trial_ends_at: '{{ tenant.trial_ends_at[:10] if tenant.trial_ends_at else "" }}',
+            max_users_override: '{{ tenant.max_users_override or "" }}',
+            is_active: {{ 'true' if tenant.is_active else 'false' }},
+        },
+        saving: false,
+        message: '',
+        success: false,
+        async save() {
+            this.saving = true;
+            this.message = '';
+            try {
+                const body = { ...this.form };
+                if (body.trial_ends_at) body.trial_ends_at = body.trial_ends_at + 'T00:00:00';
+                else body.trial_ends_at = null;
+                if (body.max_users_override === '') body.max_users_override = null;
+                else body.max_users_override = parseInt(body.max_users_override);
+
+                const res = await fetch('/api/tenants/{{ tenant.id }}', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error('Update failed');
+                this.success = true;
+                this.message = 'Saved successfully.';
+            } catch (e) {
+                this.success = false;
+                this.message = e.message;
+            }
+            this.saving = false;
+        }
+    };
+}
+</script>
+{% endblock %}

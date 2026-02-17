@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% set active_page = "geography" %}
+{% block title %}Geography{% endblock %}
+{% block page_title %}Geography{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>#map { height: calc(100vh - 180px); border-radius: 0.5rem; }</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-2">
+    <div id="map"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const map = L.map('map').setView([30, 0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18,
+}).addTo(map);
+
+const PLAN_COLORS = { light: '#6b7280', pro: '#f59e0b', life: '#8b5cf6' };
+
+fetch('/api/geography/tenants')
+    .then(r => r.json())
+    .then(tenants => {
+        tenants.forEach(t => {
+            const color = PLAN_COLORS[t.plan] || '#6b7280';
+            const marker = L.circleMarker([t.lat, t.lng], {
+                radius: 8, fillColor: color, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85,
+            }).addTo(map);
+            marker.bindPopup(`
+                <div style="min-width:150px">
+                    <strong>${t.name}</strong><br>
+                    <span style="color:#666">${t.city || ''} ${t.country || ''}</span><br>
+                    <span style="color:${color};font-weight:600">${(t.plan || '').toUpperCase()}</span>
+                </div>
+            `);
+        });
+        if (tenants.length) {
+            const bounds = tenants.map(t => [t.lat, t.lng]);
+            map.fitBounds(bounds, { padding: [30, 30] });
+        }
+    });
+</script>
+{% endblock %}
