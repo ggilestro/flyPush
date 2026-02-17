@@ -210,7 +210,7 @@ async def download_template(template_type: str = "basic"):
         template_type = "basic"
 
     content = generate_csv_template(template_type)
-    filename = f"flypush_import_template_{template_type}.csv"
+    filename = f"flyroom_import_template_{template_type}.csv"
 
     return Response(
         content=content,

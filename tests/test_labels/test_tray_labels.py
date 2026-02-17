@@ -55,7 +55,7 @@ class TestGenerateTrayLabelData:
         assert data["stock_id"] == "Tray-A"  # Tray name in stock_id position
         assert data["genotype"] == "Main lab tray"  # Description in genotype position
         assert data["source_info"] == "Grid 5x10"  # Type info in source position
-        assert data["qr_content"] == "flypush://tray/Tray-A"
+        assert data["qr_content"] == "flyroom://tray/Tray-A"
         assert data["print_date"] == date.today().isoformat()
 
     def test_numeric_tray_label_data(self):
@@ -67,7 +67,7 @@ class TestGenerateTrayLabelData:
         data = svc.generate_tray_label_data(tray)
 
         assert data["source_info"] == "100 positions"
-        assert data["qr_content"] == "flypush://tray/Tray-A"
+        assert data["qr_content"] == "flyroom://tray/Tray-A"
 
     def test_tray_without_description(self):
         """Should handle missing description gracefully."""
@@ -88,13 +88,13 @@ class TestQrContentOverride:
         png = create_label_png(
             stock_id="Tray-A",
             genotype="Test tray description",
-            qr_content="flypush://tray/Tray-A",
+            qr_content="flyroom://tray/Tray-A",
         )
         assert isinstance(png, bytes)
         assert len(png) > 0
 
     def test_png_without_qr_content_falls_back(self):
-        """Should fall back to flypush://{stock_id} when qr_content is None."""
+        """Should fall back to flyroom://{stock_id} when qr_content is None."""
         # This just verifies the function works without qr_content (backward compat)
         png = create_label_png(
             stock_id="TEST-001",
@@ -108,7 +108,7 @@ class TestQrContentOverride:
         pdf = create_label_pdf(
             stock_id="Tray-B",
             genotype="Description here",
-            qr_content="flypush://tray/Tray-B",
+            qr_content="flyroom://tray/Tray-B",
         )
         assert isinstance(pdf, bytes)
         assert pdf[:4] == b"%PDF"
@@ -163,7 +163,7 @@ class TestTrayJobSentinel:
         assert result is not None
         assert len(result.labels) == 1
         assert result.labels[0].stock_id == "Tray-A"
-        assert result.labels[0].qr_content == "flypush://tray/Tray-A"
+        assert result.labels[0].qr_content == "flyroom://tray/Tray-A"
 
     def test_get_job_labels_tray_not_found(self):
         """Should return None when tray in sentinel doesn't exist."""

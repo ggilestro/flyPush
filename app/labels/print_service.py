@@ -383,7 +383,7 @@ class PrintService:
 
         # Create the agent in this tenant's context
         self.tenant_id = matched_session["tenant_id"]
-        agent_name = hostname or "FlyPush Printing Agent"
+        agent_name = hostname or "flyRoom Printing Agent"
         agent_data = PrintAgentCreate(name=agent_name)
         agent, api_key = self.create_agent(agent_data)
 

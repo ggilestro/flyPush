@@ -72,7 +72,7 @@ class LabelService:
         - stock_id position -> tray name (large, prominent)
         - genotype position -> description (medium, wrapped)
         - source_info position -> tray type info (small)
-        - qr_content -> flypush://tray/{tray_name}
+        - qr_content -> flyroom://tray/{tray_name}
 
         Args:
             tray: Tray model instance.
@@ -94,7 +94,7 @@ class LabelService:
             "source_info": type_info,
             "location_info": None,
             "print_date": date.today().isoformat(),
-            "qr_content": f"flypush://tray/{tray.name}",
+            "qr_content": f"flyroom://tray/{tray.name}",
         }
 
     def generate_tray_pdf(
@@ -143,7 +143,7 @@ class LabelService:
         if not stock:
             return None
 
-        qr_data = f"flypush://{stock.stock_id}"
+        qr_data = f"flyroom://{stock.stock_id}"
         return generate_qr_code(qr_data, size=size)
 
     def generate_barcode(self, stock_id: str) -> bytes | None:

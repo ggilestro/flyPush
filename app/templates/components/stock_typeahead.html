@@ -108,9 +108,9 @@ function stockTypeahead(role, excludeId) {
         selectedStock: null,
 
         async search() {
-            // Strip flypush:// prefix from QR code scans
-            if (this.query.startsWith('flypush://')) {
-                this.query = this.query.replace('flypush://', '');
+            // Strip flyroom:// prefix from QR code scans
+            if (this.query.startsWith('flyroom://')) {
+                this.query = this.query.replace('flyroom://', '');
             }
             if (this.query.length < 2) {
                 this.results = [];

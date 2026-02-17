@@ -210,7 +210,7 @@ def create_label_png(
         qr_size = int(20 * px_per_mm)
 
         # Generate QR code
-        qr_data = qr_content or f"flypush://{stock_id}"
+        qr_data = qr_content or f"flyroom://{stock_id}"
         qr_img = qrcode.make(qr_data, box_size=max(1, qr_size // 21), border=1)
         qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.NEAREST)
 
@@ -802,7 +802,7 @@ def _draw_label_content(
             qr_y = draw_height - margin - qr_size  # At top
 
             # QR code
-            qr_data = f"flypush://{stock_id}"
+            qr_data = f"flyroom://{stock_id}"
             qr_code = qr.QrCodeWidget(qr_data)
             qr_code.barWidth = qr_size
             qr_code.barHeight = qr_size
@@ -855,7 +855,7 @@ def _draw_label_content(
             text_width = draw_width - text_x - margin
 
             # QR code
-            qr_data = f"flypush://{stock_id}"
+            qr_data = f"flyroom://{stock_id}"
             qr_code = qr.QrCodeWidget(qr_data)
             qr_code.barWidth = qr_size
             qr_code.barHeight = qr_size

@@ -104,7 +104,7 @@ def generate_label_content(
 
     if include_qr:
         # QR code contains full stock info URL
-        qr_data = f"flypush://{stock_id}"
+        qr_data = f"flyroom://{stock_id}"
         content["qr_code"] = generate_qr_code(qr_data, size=150)
 
     if include_barcode:

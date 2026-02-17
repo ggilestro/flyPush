@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     )
 
     # Application
-    app_name: str = "flyPush"
+    app_name: str = "flyRoom"
     debug: bool = False
     environment: Literal["development", "staging", "production"] = "development"
 
@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from_email: str = "noreply@example.com"
-    smtp_from_name: str = "flyPush"
+    smtp_from_name: str = "flyRoom"
     smtp_use_tls: bool = True
 
     # Cron/scheduler settings
