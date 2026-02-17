@@ -127,6 +127,7 @@ class TenantService:
                 email=u.email,
                 full_name=u.full_name,
                 role=u.role.value,
+                status=u.status.value,
                 is_active=u.is_active,
                 created_at=u.created_at,
                 last_login=u.last_login,

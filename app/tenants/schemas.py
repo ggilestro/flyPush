@@ -31,6 +31,7 @@ class UserListResponse(BaseModel):
     email: str
     full_name: str
     role: str
+    status: str
     is_active: bool
     created_at: datetime
     last_login: datetime | None = None
