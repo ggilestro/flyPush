@@ -697,12 +697,15 @@ async def settings_page(
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
+    has_organization = bool(current_user.tenant and current_user.tenant.organization_id)
+
     return templates.TemplateResponse(
         "settings.html",
         {
             "request": request,
             "title": "Settings",
             "current_user": current_user,
+            "has_organization": has_organization,
         },
     )
 
@@ -737,43 +740,25 @@ async def labels_page(
     )
 
 
-@app.get("/admin", response_class=HTMLResponse)
+@app.get("/admin")
 async def admin_page(
-    request: Request,
     db: Session = Depends(get_db),
     access_token: str | None = Cookie(None),
 ):
-    """Render the admin panel page.
+    """Redirect /admin to /settings#admin for backward compatibility.
 
     Args:
-        request: FastAPI request object.
         db: Database session.
         access_token: JWT access token from cookie.
 
     Returns:
-        HTMLResponse or RedirectResponse.
+        RedirectResponse.
     """
-    from app.db.models import UserRole
-
     current_user = get_current_user_from_cookie(db, access_token)
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
-    # Only admins can access
-    if current_user.role != UserRole.ADMIN:
-        return RedirectResponse(url="/", status_code=302)
-
-    has_organization = bool(current_user.tenant and current_user.tenant.organization_id)
-
-    return templates.TemplateResponse(
-        "admin/index.html",
-        {
-            "request": request,
-            "title": "Admin Panel",
-            "current_user": current_user,
-            "has_organization": has_organization,
-        },
-    )
+    return RedirectResponse(url="/settings#admin", status_code=302)
 
 
 @app.get("/trays", response_class=HTMLResponse)

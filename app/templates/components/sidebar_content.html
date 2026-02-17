@@ -172,18 +172,6 @@
             </a>
         </li>
 
-        {% if current_user and current_user.role.value == 'admin' %}
-        <!-- Admin -->
-        <li>
-            <a href="/admin"
-               class="group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium {% if '/admin' in request.path %}bg-primary-50 text-primary-600{% else %}text-gray-700 hover:bg-gray-50 hover:text-gray-900{% endif %}">
-                <svg class="h-5 w-5 {% if '/admin' in request.path %}text-primary-600{% else %}text-gray-400 group-hover:text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                Admin
-            </a>
-        </li>
-        {% endif %}
     </ul>
 
     <!-- Tenant info at bottom -->

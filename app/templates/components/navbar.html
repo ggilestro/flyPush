@@ -85,9 +85,6 @@
                             <p class="text-gray-500 truncate">{{ current_user.email if current_user else '' }}</p>
                         </div>
                         <a href="/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
-                        {% if current_user and current_user.role == 'admin' %}
-                        <a href="/admin" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin</a>
-                        {% endif %}
                         <form action="/api/auth/logout" method="POST" class="border-t border-gray-100">
                             <button type="submit" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
                                 Sign out

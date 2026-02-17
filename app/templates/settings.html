@@ -20,14 +20,7 @@
                 </svg>
                 User
             </button>
-            <button @click="activeTab = 'lab'"
-                    :class="activeTab === 'lab' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
-                    class="whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
-                <svg class="inline-block h-5 w-5 mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                Lab & Organisation
-            </button>
+            {% if current_user and current_user.role.value == 'admin' %}
             <button @click="activeTab = 'labels'"
                     :class="activeTab === 'labels' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
                     class="whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
@@ -36,6 +29,15 @@
                 </svg>
                 Labels
             </button>
+            <button @click="activeTab = 'admin'"
+                    :class="activeTab === 'admin' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                    class="whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+                <svg class="inline-block h-5 w-5 mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                Admin
+            </button>
+            {% endif %}
         </nav>
     </div>
 
@@ -115,195 +117,10 @@
         </div>
     </div>
 
-    <!-- Lab & Organisation Tab -->
-    <div x-show="activeTab === 'lab'" x-cloak class="space-y-6">
-        <!-- Flip Tracking Settings (Admin only) -->
-        {% if current_user.role.value == 'admin' %}
-        <div class="bg-white shadow rounded-lg p-6" x-data="flipSettings()" x-init="loadSettings()">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Flip Tracking Settings</h2>
-            <p class="text-sm text-gray-500 mb-4">Configure when stocks should be flagged for needing a flip (transfer to fresh food)</p>
-
-            <form @submit.prevent="saveSettings()" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Warning Threshold (days)</label>
-                        <input type="number" x-model="settings.flip_warning_days" min="1" max="60"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
-                        <p class="mt-1 text-xs text-gray-500">Stocks will show yellow warning after this many days</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Critical Threshold (days)</label>
-                        <input type="number" x-model="settings.flip_critical_days" min="1" max="90"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
-                        <p class="mt-1 text-xs text-gray-500">Stocks will show red critical status after this many days</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="flip_reminder_enabled" x-model="settings.flip_reminder_enabled"
-                           class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                    <label for="flip_reminder_enabled" class="text-sm font-medium text-gray-700">
-                        Enable weekly flip reminder emails
-                    </label>
-                </div>
-                <p class="text-xs text-gray-500 ml-6">When enabled, stock owners receive weekly emails listing stocks that need flipping</p>
-                <div class="flex justify-end">
-                    <button type="submit" :disabled="saving"
-                            class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
-                        <span x-text="saving ? 'Saving...' : 'Save Flip Settings'"></span>
-                    </button>
-                </div>
-            </form>
-        </div>
-        {% endif %}
-
-        <div class="bg-white shadow rounded-lg p-6" x-data="labSettings()" x-init="loadLabInfo()">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Lab Settings</h2>
-
-            <!-- Geographic Information -->
-            <div class="mb-6">
-                <h3 class="text-sm font-medium text-gray-700 mb-3">Geographic Information</h3>
-                <form @submit.prevent="updateGeoInfo()" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">City</label>
-                            <input type="text" x-model="geoInfo.city" placeholder="e.g., London"
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Country</label>
-                            <input type="text" x-model="geoInfo.country" placeholder="e.g., United Kingdom"
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
-                        </div>
-                    </div>
-                    <div class="flex justify-end">
-                        <button type="submit" :disabled="savingGeo"
-                                class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
-                            <span x-text="savingGeo ? 'Saving...' : 'Update Location'"></span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Organization Membership -->
-            <div class="border-t border-gray-200 pt-6">
-                <h3 class="text-sm font-medium text-gray-700 mb-3">Organization Membership</h3>
-
-                <!-- Current organization status -->
-                <template x-if="labInfo.organization">
-                    <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-green-800">Member of: <span x-text="labInfo.organization.name"></span></p>
-                                <p class="text-xs text-green-600 mt-1" x-show="labInfo.is_org_admin">You are an organization admin</p>
-                            </div>
-                            <button @click="leaveOrganization()" :disabled="leavingOrg"
-                                    class="text-sm text-red-600 hover:text-red-800">
-                                Leave Organization
-                            </button>
-                        </div>
-                    </div>
-                </template>
-
-                <!-- Not in an organization -->
-                <template x-if="!labInfo.organization">
-                    <div>
-                        <p class="text-sm text-gray-500 mb-4">Your lab is not part of an organization. Join an existing organization or create a new one.</p>
-
-                        <!-- Search for organization -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Search Organizations</label>
-                            <div class="flex gap-2">
-                                <input type="text" x-model="orgSearch" @input.debounce.300ms="searchOrganizations()"
-                                       placeholder="Search by name..."
-                                       class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
-                            </div>
-
-                            <!-- Search results -->
-                            <template x-if="orgSearchResults.length > 0">
-                                <ul class="mt-2 border border-gray-200 rounded-md divide-y divide-gray-200">
-                                    <template x-for="org in orgSearchResults" :key="org.id">
-                                        <li class="p-3 flex items-center justify-between hover:bg-gray-50">
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900" x-text="org.name"></p>
-                                                <p class="text-xs text-gray-500" x-text="'Match: ' + Math.round(org.similarity_score * 100) + '%'"></p>
-                                            </div>
-                                            <button @click="requestJoin(org)"
-                                                    class="text-sm text-primary-600 hover:text-primary-800">
-                                                Request to Join
-                                            </button>
-                                        </li>
-                                    </template>
-                                </ul>
-                            </template>
-                        </div>
-
-                        <!-- Create new organization -->
-                        <div class="border-t border-gray-200 pt-4">
-                            <button @click="showCreateOrg = !showCreateOrg"
-                                    class="text-sm text-primary-600 hover:text-primary-800">
-                                <span x-text="showCreateOrg ? 'Cancel' : 'Or create a new organization'"></span>
-                            </button>
-
-                            <template x-if="showCreateOrg">
-                                <form @submit.prevent="createOrganization()" class="mt-4 space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Organization Name</label>
-                                        <input type="text" x-model="newOrg.name" required placeholder="e.g., Imperial College London"
-                                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Description</label>
-                                        <textarea x-model="newOrg.description" rows="2" placeholder="Brief description of the organization"
-                                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border"></textarea>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Website (optional)</label>
-                                        <input type="url" x-model="newOrg.website" placeholder="https://..."
-                                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
-                                    </div>
-                                    <div class="flex justify-end">
-                                        <button type="submit" :disabled="creatingOrg"
-                                                class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
-                                            <span x-text="creatingOrg ? 'Creating...' : 'Create Organization'"></span>
-                                        </button>
-                                    </div>
-                                </form>
-                            </template>
-                        </div>
-                    </div>
-                </template>
-            </div>
-
-            <!-- Pending Join Requests (for org admins) -->
-            <template x-if="labInfo.is_org_admin && pendingRequests.length > 0">
-                <div class="border-t border-gray-200 pt-6 mt-6">
-                    <h3 class="text-sm font-medium text-gray-700 mb-3">Pending Join Requests</h3>
-                    <ul class="border border-gray-200 rounded-md divide-y divide-gray-200">
-                        <template x-for="req in pendingRequests" :key="req.id">
-                            <li class="p-3">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900" x-text="req.tenant_name"></p>
-                                        <p class="text-xs text-gray-500" x-text="'Requested by ' + req.requested_by_name"></p>
-                                        <p class="text-xs text-gray-400 mt-1" x-show="req.message" x-text="req.message"></p>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button @click="approveJoinRequest(req.id)" class="text-sm text-green-600 hover:text-green-800">Approve</button>
-                                        <button @click="rejectJoinRequest(req.id)" class="text-sm text-red-600 hover:text-red-800">Reject</button>
-                                    </div>
-                                </div>
-                            </li>
-                        </template>
-                    </ul>
-                </div>
-            </template>
-        </div>
-    </div>
-
-    <!-- Labels Tab -->
+    <!-- Labels Tab (admin only) -->
+    {% if current_user and current_user.role.value == 'admin' %}
     <div x-show="activeTab === 'labels'" x-cloak class="space-y-6">
-        <!-- Label Settings Section (Admin only) -->
-        {% if current_user.role.value == 'admin' %}
+        <!-- Label Settings Section -->
         <div id="label-settings" class="bg-white shadow rounded-lg p-6" x-data="labelSettings()" x-init="loadSettings()">
             <h2 class="text-lg font-medium text-gray-900 mb-4">Label Defaults</h2>
             <p class="text-sm text-gray-500 mb-4">Default settings for label printing (applies to all users in this lab)</p>
@@ -357,30 +174,6 @@
                 </div>
             </form>
         </div>
-        {% else %}
-        <div class="bg-white shadow rounded-lg p-6" x-data="labelSettings()" x-init="loadSettings()">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Label Defaults</h2>
-            <p class="text-sm text-gray-500 mb-4">These settings are configured by your lab administrator</p>
-            <dl class="divide-y divide-gray-200">
-                <div class="py-3 flex justify-between">
-                    <dt class="text-sm font-medium text-gray-500">Label Format</dt>
-                    <dd class="text-sm text-gray-900" x-text="settings.default_label_format"></dd>
-                </div>
-                <div class="py-3 flex justify-between">
-                    <dt class="text-sm font-medium text-gray-500">Code Type</dt>
-                    <dd class="text-sm text-gray-900" x-text="settings.default_code_type === 'qr' ? 'QR Code' : 'Barcode'"></dd>
-                </div>
-                <div class="py-3 flex justify-between">
-                    <dt class="text-sm font-medium text-gray-500">Copies per Label</dt>
-                    <dd class="text-sm text-gray-900" x-text="settings.default_copies"></dd>
-                </div>
-                <div class="py-3 flex justify-between">
-                    <dt class="text-sm font-medium text-gray-500">Orientation</dt>
-                    <dd class="text-sm text-gray-900" x-text="settings.default_orientation + '\u00B0'"></dd>
-                </div>
-            </dl>
-        </div>
-        {% endif %}
 
         <!-- Print Agents Section -->
         <div class="bg-white shadow rounded-lg p-6" x-data="printAgentsSettings()" x-init="loadAgents()">
@@ -647,6 +440,609 @@
             </div>
         </div>
     </div>
+    {% endif %}
+
+    <!-- Admin Tab (admin only) -->
+    {% if current_user and current_user.role.value == 'admin' %}
+    <div x-show="activeTab === 'admin'" x-cloak class="space-y-6">
+        <!-- Flip Tracking Settings -->
+        <div class="bg-white shadow rounded-lg p-6" x-data="flipSettings()" x-init="loadSettings()">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Flip Tracking Settings</h2>
+            <p class="text-sm text-gray-500 mb-4">Configure when stocks should be flagged for needing a flip (transfer to fresh food)</p>
+
+            <form @submit.prevent="saveSettings()" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Warning Threshold (days)</label>
+                        <input type="number" x-model="settings.flip_warning_days" min="1" max="60"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                        <p class="mt-1 text-xs text-gray-500">Stocks will show yellow warning after this many days</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Critical Threshold (days)</label>
+                        <input type="number" x-model="settings.flip_critical_days" min="1" max="90"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                        <p class="mt-1 text-xs text-gray-500">Stocks will show red critical status after this many days</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="flip_reminder_enabled" x-model="settings.flip_reminder_enabled"
+                           class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                    <label for="flip_reminder_enabled" class="text-sm font-medium text-gray-700">
+                        Enable weekly flip reminder emails
+                    </label>
+                </div>
+                <p class="text-xs text-gray-500 ml-6">When enabled, stock owners receive weekly emails listing stocks that need flipping</p>
+                <div class="flex justify-end">
+                    <button type="submit" :disabled="saving"
+                            class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+                        <span x-text="saving ? 'Saving...' : 'Save Flip Settings'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Lab Settings Section -->
+        <div class="bg-white shadow rounded-lg p-6" x-data="labSettings()" x-init="loadLabInfo()">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Lab Settings</h2>
+
+            <!-- Geographic Information -->
+            <div class="mb-6">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Geographic Information</h3>
+                <form @submit.prevent="updateGeoInfo()" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">City</label>
+                            <input type="text" x-model="geoInfo.city" placeholder="e.g., London"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Country</label>
+                            <input type="text" x-model="geoInfo.country" placeholder="e.g., United Kingdom"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" :disabled="savingGeo"
+                                class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+                            <span x-text="savingGeo ? 'Saving...' : 'Update Location'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Organization Membership -->
+            <div class="border-t border-gray-200 pt-6">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Organization Membership</h3>
+
+                <!-- Current organization status -->
+                <template x-if="labInfo.organization">
+                    <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-green-800">Member of: <span x-text="labInfo.organization.name"></span></p>
+                                <p class="text-xs text-green-600 mt-1" x-show="labInfo.is_org_admin">You are an organization admin</p>
+                            </div>
+                            <button @click="leaveOrganization()" :disabled="leavingOrg"
+                                    class="text-sm text-red-600 hover:text-red-800">
+                                Leave Organization
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Not in an organization -->
+                <template x-if="!labInfo.organization">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-4">Your lab is not part of an organization. Join an existing organization or create a new one.</p>
+
+                        <!-- Search for organization -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Search Organizations</label>
+                            <div class="flex gap-2">
+                                <input type="text" x-model="orgSearch" @input.debounce.300ms="searchOrganizations()"
+                                       placeholder="Search by name..."
+                                       class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                            </div>
+
+                            <!-- Search results -->
+                            <template x-if="orgSearchResults.length > 0">
+                                <ul class="mt-2 border border-gray-200 rounded-md divide-y divide-gray-200">
+                                    <template x-for="org in orgSearchResults" :key="org.id">
+                                        <li class="p-3 flex items-center justify-between hover:bg-gray-50">
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900" x-text="org.name"></p>
+                                                <p class="text-xs text-gray-500" x-text="'Match: ' + Math.round(org.similarity_score * 100) + '%'"></p>
+                                            </div>
+                                            <button @click="requestJoin(org)"
+                                                    class="text-sm text-primary-600 hover:text-primary-800">
+                                                Request to Join
+                                            </button>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+                        </div>
+
+                        <!-- Create new organization -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <button @click="showCreateOrg = !showCreateOrg"
+                                    class="text-sm text-primary-600 hover:text-primary-800">
+                                <span x-text="showCreateOrg ? 'Cancel' : 'Or create a new organization'"></span>
+                            </button>
+
+                            <template x-if="showCreateOrg">
+                                <form @submit.prevent="createOrganization()" class="mt-4 space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Organization Name</label>
+                                        <input type="text" x-model="newOrg.name" required placeholder="e.g., Imperial College London"
+                                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Description</label>
+                                        <textarea x-model="newOrg.description" rows="2" placeholder="Brief description of the organization"
+                                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Website (optional)</label>
+                                        <input type="url" x-model="newOrg.website" placeholder="https://..."
+                                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="submit" :disabled="creatingOrg"
+                                                class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+                                            <span x-text="creatingOrg ? 'Creating...' : 'Create Organization'"></span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Pending Join Requests (for org admins) -->
+            <template x-if="labInfo.is_org_admin && pendingRequests.length > 0">
+                <div class="border-t border-gray-200 pt-6 mt-6">
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Pending Join Requests</h3>
+                    <ul class="border border-gray-200 rounded-md divide-y divide-gray-200">
+                        <template x-for="req in pendingRequests" :key="req.id">
+                            <li class="p-3">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900" x-text="req.tenant_name"></p>
+                                        <p class="text-xs text-gray-500" x-text="'Requested by ' + req.requested_by_name"></p>
+                                        <p class="text-xs text-gray-400 mt-1" x-show="req.message" x-text="req.message"></p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button @click="approveJoinRequest(req.id)" class="text-sm text-green-600 hover:text-green-800">Approve</button>
+                                        <button @click="rejectJoinRequest(req.id)" class="text-sm text-red-600 hover:text-red-800">Reject</button>
+                                    </div>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+        </div>
+
+        <!-- Team Section -->
+        <div class="bg-white shadow rounded-lg p-6" x-data="teamManagement()" x-init="init()">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Team</h2>
+
+            <p class="text-sm text-gray-500 mb-4">Send an email invitation for a streamlined sign-up (no email verification needed), or copy a single-use invitation link to share directly.</p>
+
+            <!-- Invite Bar -->
+            <div class="flex flex-wrap items-center gap-3 mb-6">
+                <input type="email" x-model="email" placeholder="colleague@university.edu"
+                       @keydown.enter="sendInvitation()"
+                       class="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border w-64">
+                {% if has_organization %}
+                <select x-model="invitationType" class="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-2 py-2 border">
+                    <option value="lab_member">Lab Member</option>
+                    <option value="new_tenant">New Lab</option>
+                </select>
+                {% endif %}
+                <button @click="sendInvitation()" :disabled="sending || !email"
+                        class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                    <svg x-show="sending" class="animate-spin -ml-0.5 mr-1.5 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <svg x-show="!sending" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span x-text="sending ? 'Sending...' : 'Send Email Invitation'"></span>
+                </button>
+
+                <span class="text-gray-300">|</span>
+
+                <!-- Copy generic invitation link -->
+                <button @click="copyLink()" type="button" :disabled="copyingLink"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                    <svg x-show="!copied" class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <svg x-show="copied" class="h-4 w-4 mr-1.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span x-text="copied ? 'Copied!' : 'Copy Invitation Link'"></span>
+                </button>
+            </div>
+
+            <!-- Status Message -->
+            <template x-if="statusMessage">
+                <div class="mb-4 rounded-md p-3" :class="statusType === 'success' ? 'bg-green-50' : 'bg-red-50'">
+                    <p class="text-sm" :class="statusType === 'success' ? 'text-green-700' : 'text-red-700'" x-text="statusMessage"></p>
+                </div>
+            </template>
+
+            <!-- Team Members Table (includes pending users) -->
+            <template x-if="loading">
+                <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                    <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+            </template>
+
+            <template x-if="!loading && members.length === 0">
+                <p class="text-sm text-gray-500">No team members yet.</p>
+            </template>
+
+            <template x-if="!loading && members.length > 0">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="member in sortedMembers" :key="member.id">
+                                <tr :class="member.status === 'pending' ? 'bg-yellow-50/50' : ''">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900" x-text="member.full_name"></td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="member.email"></td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
+                                              :class="member.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'"
+                                              x-text="member.role"></span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
+                                              :class="{
+                                                  'bg-yellow-100 text-yellow-800': member.status === 'pending',
+                                                  'bg-green-100 text-green-800': member.status === 'approved' && member.is_active,
+                                                  'bg-red-100 text-red-800': member.status === 'rejected' || !member.is_active
+                                              }"
+                                              x-text="member.status === 'pending' ? 'Pending' : (member.is_active ? 'Active' : 'Inactive')"></span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="new Date(member.created_at).toLocaleDateString()"></td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                        <template x-if="member.status === 'pending'">
+                                            <div class="flex space-x-2">
+                                                <button @click="approveUser(member.id)"
+                                                        class="inline-flex items-center rounded-md bg-green-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-green-500">
+                                                    Approve
+                                                </button>
+                                                <button @click="rejectUser(member.id)"
+                                                        class="inline-flex items-center rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-red-500">
+                                                    Reject
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+
+            <!-- Sent Invitations (collapsible) -->
+            <template x-if="invitations.length > 0">
+                <div class="mt-6 border-t border-gray-200 pt-4">
+                    <button @click="showInvitations = !showInvitations"
+                            class="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                        <svg class="h-4 w-4 transition-transform" :class="showInvitations ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                        Sent Invitations
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600" x-text="invitations.length"></span>
+                    </button>
+                    <div x-show="showInvitations" x-collapse class="mt-3">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sent</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <template x-for="inv in invitations" :key="inv.id">
+                                        <tr>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" x-text="inv.email"></td>
+                                            <td class="px-4 py-3 whitespace-nowrap">
+                                                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
+                                                      :class="inv.invitation_type === 'new_tenant' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
+                                                      x-text="inv.invitation_type === 'new_tenant' ? 'New Lab' : 'Lab Member'"></span>
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap">
+                                                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
+                                                      :class="{
+                                                          'bg-yellow-100 text-yellow-800': inv.status === 'pending',
+                                                          'bg-green-100 text-green-800': inv.status === 'accepted',
+                                                          'bg-gray-100 text-gray-800': inv.status === 'cancelled',
+                                                          'bg-red-100 text-red-800': inv.status === 'expired'
+                                                      }"
+                                                      x-text="inv.status"></span>
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="new Date(inv.created_at).toLocaleDateString()"></td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                                <template x-if="inv.status === 'pending'">
+                                                    <div class="flex space-x-2">
+                                                        <button @click="resendInvitation(inv.id)"
+                                                                class="text-primary-600 hover:text-primary-800 text-xs font-medium">Resend</button>
+                                                        <button @click="cancelInvitation(inv.id)"
+                                                                class="text-red-600 hover:text-red-800 text-xs font-medium">Cancel</button>
+                                                    </div>
+                                                </template>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Backup & Restore Section -->
+        <div class="bg-white shadow rounded-lg p-6" x-data="backupRestore()">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Backup & Restore</h2>
+            <p class="text-sm text-gray-600 mb-6">Export your lab's data for backup or import from a previous backup.</p>
+
+            <!-- Status Messages -->
+            <template x-if="message">
+                <div class="mb-4 rounded-md p-4" :class="messageType === 'success' ? 'bg-green-50' : messageType === 'error' ? 'bg-red-50' : 'bg-blue-50'">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <template x-if="messageType === 'success'">
+                                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </template>
+                            <template x-if="messageType === 'error'">
+                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </template>
+                            <template x-if="messageType === 'info'">
+                                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                </svg>
+                            </template>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm" :class="messageType === 'success' ? 'text-green-800' : messageType === 'error' ? 'text-red-800' : 'text-blue-800'" x-text="message"></p>
+                        </div>
+                        <div class="ml-auto pl-3">
+                            <button @click="message = ''" class="-mx-1.5 -my-1.5 rounded-md p-1.5" :class="messageType === 'success' ? 'text-green-500 hover:bg-green-100' : messageType === 'error' ? 'text-red-500 hover:bg-red-100' : 'text-blue-500 hover:bg-blue-100'">
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Export Section -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-md font-medium text-gray-900 mb-2">Export Backup</h3>
+                    <p class="text-sm text-gray-500 mb-4">Download a complete backup of your lab's data including stocks, crosses, users, and settings.</p>
+                    <button @click="exportBackup()" :disabled="exporting"
+                            class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <template x-if="!exporting">
+                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        </template>
+                        <template x-if="exporting">
+                            <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </template>
+                        <span x-text="exporting ? 'Exporting...' : 'Download Backup'"></span>
+                    </button>
+                </div>
+
+                <!-- Import Section -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-md font-medium text-gray-900 mb-2">Import Backup</h3>
+                    <p class="text-sm text-gray-500 mb-4">Restore data from a previously exported backup file.</p>
+
+                    <div class="space-y-4">
+                        <!-- File Input -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Backup File</label>
+                            <input type="file" accept=".json" @change="handleFileSelect($event)"
+                                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+
+                        <!-- Conflict Mode -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">If records already exist</label>
+                            <select x-model="conflictMode" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <option value="fail">Stop import (safest)</option>
+                                <option value="skip">Skip existing records</option>
+                                <option value="overwrite">Overwrite existing records</option>
+                            </select>
+                        </div>
+
+                        <!-- Dry Run Toggle -->
+                        <div class="flex items-center">
+                            <input type="checkbox" x-model="dryRun" id="admin-dry-run"
+                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="admin-dry-run" class="ml-2 block text-sm text-gray-700">
+                                Dry run (validate without importing)
+                            </label>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-2">
+                            <button @click="validateBackup()" :disabled="!selectedFile || validating"
+                                    class="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <template x-if="validating">
+                                    <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </template>
+                                <span x-text="validating ? 'Validating...' : 'Validate'"></span>
+                            </button>
+                            <button @click="importBackup()" :disabled="!selectedFile || importing"
+                                    class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <template x-if="importing">
+                                    <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </template>
+                                <span x-text="importing ? 'Importing...' : (dryRun ? 'Test Import' : 'Import')"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Validation Results -->
+            <template x-if="validationResult">
+                <div class="mt-6 border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-md font-medium text-gray-900 mb-3">Validation Results</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center">
+                            <span class="font-medium w-32">Status:</span>
+                            <span :class="validationResult.is_valid ? 'text-green-600' : 'text-red-600'" x-text="validationResult.is_valid ? 'Valid' : 'Invalid'"></span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-medium w-32">Schema Version:</span>
+                            <span x-text="validationResult.schema_version"></span>
+                            <span class="ml-2" :class="validationResult.schema_compatible ? 'text-green-600' : 'text-red-600'" x-text="validationResult.schema_compatible ? '(compatible)' : '(incompatible)'"></span>
+                        </div>
+                        <div>
+                            <span class="font-medium">Record Counts:</span>
+                            <div class="mt-1 grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <template x-for="(count, table) in validationResult.record_counts" :key="table">
+                                    <div class="bg-gray-50 rounded px-2 py-1">
+                                        <span class="text-gray-600" x-text="table + ': '"></span>
+                                        <span class="font-medium" x-text="count"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <template x-if="validationResult.warnings && validationResult.warnings.length > 0">
+                            <div>
+                                <span class="font-medium text-yellow-600">Warnings:</span>
+                                <ul class="mt-1 list-disc list-inside text-yellow-700">
+                                    <template x-for="warning in validationResult.warnings" :key="warning">
+                                        <li x-text="warning"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                        <template x-if="validationResult.errors && validationResult.errors.length > 0">
+                            <div>
+                                <span class="font-medium text-red-600">Errors:</span>
+                                <ul class="mt-1 list-disc list-inside text-red-700">
+                                    <template x-for="error in validationResult.errors" :key="error">
+                                        <li x-text="error"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                        <template x-if="validationResult.conflicts && validationResult.conflicts.length > 0">
+                            <div>
+                                <span class="font-medium text-orange-600">Conflicts (<span x-text="validationResult.conflicts.length"></span>):</span>
+                                <ul class="mt-1 list-disc list-inside text-orange-700 max-h-32 overflow-y-auto">
+                                    <template x-for="conflict in validationResult.conflicts.slice(0, 10)" :key="conflict.record_id">
+                                        <li x-text="conflict.message"></li>
+                                    </template>
+                                    <template x-if="validationResult.conflicts.length > 10">
+                                        <li class="italic">... and <span x-text="validationResult.conflicts.length - 10"></span> more</li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Import Results -->
+            <template x-if="importResult">
+                <div class="mt-6 border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-md font-medium text-gray-900 mb-3">
+                        <span x-text="importResult.dry_run ? 'Dry Run Results' : 'Import Results'"></span>
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center">
+                            <span class="font-medium w-32">Status:</span>
+                            <span :class="importResult.success ? 'text-green-600' : 'text-red-600'" x-text="importResult.success ? 'Success' : 'Failed'"></span>
+                        </div>
+                        <template x-if="Object.keys(importResult.records_imported || {}).length > 0">
+                            <div>
+                                <span class="font-medium">Records Imported:</span>
+                                <div class="mt-1 grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    <template x-for="(count, table) in importResult.records_imported" :key="table">
+                                        <div class="bg-green-50 rounded px-2 py-1" x-show="count > 0">
+                                            <span class="text-gray-600" x-text="table + ': '"></span>
+                                            <span class="font-medium text-green-700" x-text="count"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="Object.keys(importResult.records_skipped || {}).some(k => importResult.records_skipped[k] > 0)">
+                            <div>
+                                <span class="font-medium">Records Skipped:</span>
+                                <div class="mt-1 grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    <template x-for="(count, table) in importResult.records_skipped" :key="table">
+                                        <div class="bg-yellow-50 rounded px-2 py-1" x-show="count > 0">
+                                            <span class="text-gray-600" x-text="table + ': '"></span>
+                                            <span class="font-medium text-yellow-700" x-text="count"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="importResult.errors && importResult.errors.length > 0">
+                            <div>
+                                <span class="font-medium text-red-600">Errors:</span>
+                                <ul class="mt-1 list-disc list-inside text-red-700">
+                                    <template x-for="error in importResult.errors" :key="error">
+                                        <li x-text="error"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
@@ -1310,6 +1706,320 @@ function flipSettings() {
                 console.error('Error saving flip settings:', error);
             } finally {
                 this.saving = false;
+            }
+        }
+    }
+}
+
+function teamManagement() {
+    return {
+        // Invite
+        copied: false,
+        copyingLink: false,
+        email: '',
+        invitationType: 'lab_member',
+        sending: false,
+        statusMessage: '',
+        statusType: 'info',
+        // Members & invitations
+        loading: true,
+        members: [],
+        invitations: [],
+        showInvitations: false,
+
+        get sortedMembers() {
+            return [...this.members].sort((a, b) => {
+                if (a.status === 'pending' && b.status !== 'pending') return -1;
+                if (a.status !== 'pending' && b.status === 'pending') return 1;
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+        },
+
+        async init() {
+            this.loadMembers();
+            this.loadInvitations();
+        },
+
+        async copyLink() {
+            this.copyingLink = true;
+            try {
+                const response = await fetch('/api/auth/invitation-link', { credentials: 'include' });
+                if (response.ok) {
+                    const data = await response.json();
+                    await navigator.clipboard.writeText(data.invitation_url);
+                    this.copied = true;
+                    setTimeout(() => this.copied = false, 2000);
+                } else {
+                    this.statusMessage = 'Failed to generate invitation link';
+                    this.statusType = 'error';
+                }
+            } catch (error) {
+                console.error('Failed to copy invitation link:', error);
+                this.statusMessage = 'Failed to copy link';
+                this.statusType = 'error';
+            } finally {
+                this.copyingLink = false;
+            }
+        },
+
+        async loadMembers() {
+            this.loading = true;
+            try {
+                const response = await fetch('/api/admin/users', { credentials: 'include' });
+                if (response.ok) {
+                    this.members = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading team members:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async approveUser(userId) {
+            try {
+                const response = await fetch(`/api/auth/users/${userId}/approve`, {
+                    method: 'POST', credentials: 'include'
+                });
+                if (response.ok) {
+                    this.loadMembers();
+                }
+            } catch (error) {
+                console.error('Error approving user:', error);
+            }
+        },
+
+        async rejectUser(userId) {
+            if (!confirm('Are you sure you want to reject this user?')) return;
+            try {
+                const response = await fetch(`/api/auth/users/${userId}/reject`, {
+                    method: 'POST', credentials: 'include'
+                });
+                if (response.ok) {
+                    this.loadMembers();
+                }
+            } catch (error) {
+                console.error('Error rejecting user:', error);
+            }
+        },
+
+        async loadInvitations() {
+            try {
+                const response = await fetch('/api/admin/invitations', { credentials: 'include' });
+                if (response.ok) {
+                    this.invitations = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading invitations:', error);
+            }
+        },
+
+        async sendInvitation() {
+            if (!this.email) return;
+            this.sending = true;
+            this.statusMessage = '';
+            try {
+                const response = await fetch('/api/admin/invitations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email: this.email, invitation_type: this.invitationType })
+                });
+                if (response.ok) {
+                    this.statusMessage = `Invitation sent to ${this.email}`;
+                    this.statusType = 'success';
+                    this.email = '';
+                    this.loadInvitations();
+                } else {
+                    const error = await response.json();
+                    this.statusMessage = error.detail || 'Failed to send invitation';
+                    this.statusType = 'error';
+                }
+            } catch (error) {
+                console.error('Error sending invitation:', error);
+                this.statusMessage = 'Failed to send invitation';
+                this.statusType = 'error';
+            } finally {
+                this.sending = false;
+            }
+        },
+
+        async cancelInvitation(invitationId) {
+            if (!confirm('Cancel this invitation?')) return;
+            try {
+                const response = await fetch(`/api/admin/invitations/${invitationId}/cancel`, {
+                    method: 'POST', credentials: 'include'
+                });
+                if (response.ok) {
+                    this.loadInvitations();
+                }
+            } catch (error) {
+                console.error('Error cancelling invitation:', error);
+            }
+        },
+
+        async resendInvitation(invitationId) {
+            try {
+                const response = await fetch(`/api/admin/invitations/${invitationId}/resend`, {
+                    method: 'POST', credentials: 'include'
+                });
+                if (response.ok) {
+                    this.statusMessage = 'Invitation resent successfully';
+                    this.statusType = 'success';
+                    this.loadInvitations();
+                } else {
+                    const error = await response.json();
+                    this.statusMessage = error.detail || 'Failed to resend';
+                    this.statusType = 'error';
+                }
+            } catch (error) {
+                console.error('Error resending invitation:', error);
+            }
+        }
+    }
+}
+
+function backupRestore() {
+    return {
+        exporting: false,
+        importing: false,
+        validating: false,
+        selectedFile: null,
+        conflictMode: 'fail',
+        dryRun: false,
+        message: '',
+        messageType: 'info',
+        validationResult: null,
+        importResult: null,
+
+        handleFileSelect(event) {
+            this.selectedFile = event.target.files[0];
+            this.validationResult = null;
+            this.importResult = null;
+            this.message = '';
+        },
+
+        async exportBackup() {
+            this.exporting = true;
+            this.message = '';
+            try {
+                const response = await fetch('/api/admin/backup/export', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'backup.json';
+                    if (contentDisposition) {
+                        const match = contentDisposition.match(/filename="(.+)"/);
+                        if (match) filename = match[1];
+                    }
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    this.message = 'Backup downloaded successfully';
+                    this.messageType = 'success';
+                } else {
+                    const error = await response.json();
+                    this.message = error.detail || 'Export failed';
+                    this.messageType = 'error';
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                this.message = 'Export failed: ' + error.message;
+                this.messageType = 'error';
+            } finally {
+                this.exporting = false;
+            }
+        },
+
+        async validateBackup() {
+            if (!this.selectedFile) return;
+            this.validating = true;
+            this.message = '';
+            this.validationResult = null;
+            try {
+                const formData = new FormData();
+                formData.append('file', this.selectedFile);
+                const response = await fetch('/api/admin/backup/validate', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                if (response.ok) {
+                    this.validationResult = await response.json();
+                    if (this.validationResult.is_valid) {
+                        this.message = 'Backup file is valid and ready to import';
+                        this.messageType = 'success';
+                    } else {
+                        this.message = 'Backup file has validation errors';
+                        this.messageType = 'error';
+                    }
+                } else {
+                    const error = await response.json();
+                    this.message = error.detail || 'Validation failed';
+                    this.messageType = 'error';
+                }
+            } catch (error) {
+                console.error('Validation error:', error);
+                this.message = 'Validation failed: ' + error.message;
+                this.messageType = 'error';
+            } finally {
+                this.validating = false;
+            }
+        },
+
+        async importBackup() {
+            if (!this.selectedFile) return;
+            if (!this.dryRun && !confirm('Are you sure you want to import this backup? This will add or modify data in your database.')) {
+                return;
+            }
+            this.importing = true;
+            this.message = '';
+            this.importResult = null;
+            try {
+                const formData = new FormData();
+                formData.append('file', this.selectedFile);
+                formData.append('conflict_mode', this.conflictMode);
+                formData.append('dry_run', this.dryRun);
+                const response = await fetch('/api/admin/backup/import', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                if (response.ok) {
+                    this.importResult = await response.json();
+                    if (this.importResult.success) {
+                        if (this.importResult.dry_run) {
+                            this.message = 'Dry run completed successfully - no changes were made';
+                        } else {
+                            this.message = 'Backup imported successfully';
+                        }
+                        this.messageType = 'success';
+                    } else {
+                        this.message = 'Import completed with errors';
+                        this.messageType = 'error';
+                    }
+                } else {
+                    const error = await response.json();
+                    this.message = typeof error.detail === 'string' ? error.detail : (error.detail?.message || 'Import failed');
+                    this.messageType = 'error';
+                    if (error.detail?.errors) {
+                        this.importResult = { success: false, errors: error.detail.errors };
+                    }
+                }
+            } catch (error) {
+                console.error('Import error:', error);
+                this.message = 'Import failed: ' + error.message;
+                this.messageType = 'error';
+            } finally {
+                this.importing = false;
             }
         }
     }
