@@ -319,10 +319,71 @@ class TestFlyBasePluginFindByGenotype:
 
     @pytest.mark.asyncio
     async def test_find_by_genotype_partial_match(self, flybase_plugin: FlyBasePlugin):
-        """Test finding by partial genotype match."""
-        results = await flybase_plugin.find_by_genotype("w[1118]")
+        """Test finding by partial genotype match (realistic overlap)."""
+        # Query contains the VDRC stock's genotype as a substring (+ extra balancer)
+        results = await flybase_plugin.find_by_genotype("w[1118]; P{GD14516}v10004/CyO")
 
         assert len(results) >= 1
+        assert any(r.external_id == "v10004" for r in results)
+
+    @pytest.mark.asyncio
+    async def test_find_by_genotype_rejects_short_genotype_match(
+        self, flybase_plugin: FlyBasePlugin
+    ):
+        """Test that stocks with very short genotypes don't falsely match.
+
+        Regression test for NDSSC species stocks (short genotypes) matching
+        unrelated imported genotypes via substring containment.
+        """
+        # Add an NDSSC species stock with a very short genotype
+        flybase_plugin._by_repository["ndssc"] = {
+            "14011-0111.57": {
+                "external_id": "14011-0111.57",
+                "flybase_id": "FBst0500001",
+                "genotype": "N",
+                "description": "wild type",
+                "species": "Dsim",
+                "stock_type": "living stock",
+                "collection": "NDSSC",
+                "repository": "ndssc",
+            },
+        }
+
+        # These should NOT match the NDSSC stock
+        results = await flybase_plugin.find_by_genotype("UAS-lola-N shmir (attP154)")
+        ndssc_ids = [r.external_id for r in results if r.source == "ndssc"]
+        assert "14011-0111.57" not in ndssc_ids
+
+        results = await flybase_plugin.find_by_genotype(
+            "UAS-lola all isoforms shmir (attP2) - Cambridge"
+        )
+        ndssc_ids = [r.external_id for r in results if r.source == "ndssc"]
+        assert "14011-0111.57" not in ndssc_ids
+
+    @pytest.mark.asyncio
+    async def test_find_by_genotype_rejects_disproportionate_match(
+        self, flybase_plugin: FlyBasePlugin
+    ):
+        """Test that very short substring matches are rejected even above min length."""
+        # Add a stock with a 10-char genotype that happens to be a substring
+        flybase_plugin._by_repository["bdsc"]["short1"] = {
+            "external_id": "short1",
+            "flybase_id": "FBst0600001",
+            "genotype": "w[1] y[1] f",
+            "description": "short genotype",
+            "species": "Dmel",
+            "stock_type": "living stock",
+            "collection": "Bloomington",
+            "repository": "bdsc",
+        }
+
+        # A much longer genotype that contains "w[1] y[1] f" should not match
+        # because the ratio is too low (11/60 = 0.18)
+        results = await flybase_plugin.find_by_genotype(
+            "w[1] y[1] f[1]; P{UAS-GFP.nls}3 P{Act5C-GAL4.Switch.PR}3/TM6B Tb[1]"
+        )
+        matched_ids = [r.external_id for r in results]
+        assert "short1" not in matched_ids
 
     @pytest.mark.asyncio
     async def test_find_by_genotype_specific_repository(self, flybase_plugin: FlyBasePlugin):

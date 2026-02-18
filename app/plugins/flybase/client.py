@@ -271,11 +271,16 @@ class FlyBasePlugin(StockPlugin):
                     if len(exact_matches) >= max_results:
                         return exact_matches
 
-                # Partial match
+                # Partial match - require minimum overlap quality to avoid
+                # false positives from very short genotypes (e.g. NDSSC species
+                # stocks with minimal genotype info matching everything)
                 elif len(partial_matches) < max_results and (
                     query_normalized in stock_normalized or stock_normalized in query_normalized
                 ):
-                    partial_matches.append(self._to_stock_import_data(data))
+                    shorter_len = min(len(query_normalized), len(stock_normalized))
+                    longer_len = max(len(query_normalized), len(stock_normalized))
+                    if shorter_len >= 10 and shorter_len / longer_len >= 0.3:
+                        partial_matches.append(self._to_stock_import_data(data))
 
         # Return exact matches first, then partial matches
         results = exact_matches + partial_matches

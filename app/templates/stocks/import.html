@@ -1159,8 +1159,11 @@
                                                         :class="getResolution(row.row_index)?.field_values?.origin === 'repository'
                                                             ? 'bg-green-100 border-green-400'
                                                             : 'bg-blue-50 border-blue-300 hover:bg-blue-100'">
-                                                    <span class="font-medium text-blue-700">Convert to repository:</span>
-                                                    <span class="ml-1 text-xs" x-text="conflict.values.repository + ' #' + conflict.values.repository_stock_id"></span>
+                                                    <div>
+                                                        <span class="font-medium text-blue-700">Convert to repository:</span>
+                                                        <span class="ml-1 text-xs" x-text="conflict.values.repository + ' #' + conflict.values.repository_stock_id"></span>
+                                                    </div>
+                                                    <div class="mt-1 font-mono text-xs text-blue-900 break-all" x-show="conflict.values.match_genotype" x-text="conflict.values.match_genotype"></div>
                                                 </button>
                                                 <button @click="keepAsNonRepository(row.row_index)"
                                                         class="flex-1 text-left px-3 py-2 text-sm rounded-md border"
