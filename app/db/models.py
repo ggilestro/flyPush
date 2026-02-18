@@ -279,6 +279,13 @@ class Tenant(Base):
     trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     max_users_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Paddle billing
+    paddle_customer_id: Mapped[str | None] = mapped_column(String(50), index=True, nullable=True)
+    paddle_subscription_id: Mapped[str | None] = mapped_column(
+        String(50), index=True, nullable=True
+    )
+    paddle_subscription_scheduled_change: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     # Relationships
     organization: Mapped[Optional["Organization"]] = relationship(
         "Organization", back_populates="tenants"

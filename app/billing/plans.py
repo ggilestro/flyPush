@@ -20,7 +20,7 @@ PLAN_STOCK_LIMITS: dict[PlanTier, int | None] = {
 
 PLAN_DISPLAY_NAMES: dict[PlanTier, str] = {
     PlanTier.FREE: "Free",
-    PlanTier.LIGHT: "Light",
+    PlanTier.LIGHT: "Lite",
     PlanTier.PRO: "Pro",
     PlanTier.LIFE: "Life",
 }

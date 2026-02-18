@@ -120,6 +120,8 @@ def get_tenant_detail(db: Session, tenant_id: str) -> dict | None:
         "is_active": tenant.is_active,
         "trial_ends_at": tenant.trial_ends_at.isoformat() if tenant.trial_ends_at else None,
         "max_users_override": tenant.max_users_override,
+        "paddle_customer_id": tenant.paddle_customer_id,
+        "paddle_subscription_id": tenant.paddle_subscription_id,
         "created_at": tenant.created_at.isoformat() if tenant.created_at else None,
         "user_count": user_count,
         "stock_count": stock_count,

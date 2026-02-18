@@ -66,6 +66,14 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.7
     llm_max_tokens: int = 1024
 
+    # Paddle billing
+    paddle_api_key: str = ""
+    paddle_environment: Literal["sandbox", "production"] = "sandbox"
+    paddle_client_token: str = ""
+    paddle_webhook_secret: str = ""
+    paddle_price_id_lite: str = ""
+    paddle_price_id_pro: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

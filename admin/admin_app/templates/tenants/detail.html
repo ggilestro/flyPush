@@ -132,7 +132,8 @@
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">Plan</label>
                         <select x-model="form.plan" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-amber-500 focus:border-amber-500">
-                            <option value="light">Light</option>
+                            <option value="free">Free</option>
+                            <option value="light">Lite</option>
                             <option value="pro">Pro</option>
                             <option value="life">Life</option>
                         </select>
@@ -156,6 +157,20 @@
                         <input type="number" x-model="form.max_users_override" placeholder="Default per plan"
                                class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-amber-500 focus:border-amber-500">
                     </div>
+                    {% if tenant.paddle_customer_id %}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Paddle Customer ID</label>
+                        <input type="text" value="{{ tenant.paddle_customer_id }}" readonly
+                               class="w-full px-3 py-2 border border-gray-200 rounded text-sm bg-gray-50 text-gray-500">
+                    </div>
+                    {% endif %}
+                    {% if tenant.paddle_subscription_id %}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Paddle Subscription ID</label>
+                        <input type="text" value="{{ tenant.paddle_subscription_id }}" readonly
+                               class="w-full px-3 py-2 border border-gray-200 rounded text-sm bg-gray-50 text-gray-500">
+                    </div>
+                    {% endif %}
                     <div class="flex items-center gap-2">
                         <input type="checkbox" x-model="form.is_active" id="is_active" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
                         <label for="is_active" class="text-sm text-gray-700">Active</label>
