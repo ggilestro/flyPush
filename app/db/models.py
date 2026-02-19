@@ -1050,6 +1050,7 @@ class Invitation(Base):
     organization_id: Mapped[str | None] = mapped_column(
         CHAR(36), ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
     )
+    role: Mapped[str | None] = mapped_column(String(20), nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

@@ -495,7 +495,7 @@ class AuthService:
             email=data.email,
             password_hash=get_password_hash(data.password),
             full_name=data.full_name,
-            role=UserRole.USER,
+            role=UserRole(invitation.role) if invitation.role else UserRole.USER,
             status=UserStatus.APPROVED,
             is_active=True,
             is_email_verified=True,

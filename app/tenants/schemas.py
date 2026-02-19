@@ -87,6 +87,7 @@ class InvitationCreate(BaseModel):
 
     email: EmailStr
     invitation_type: str = Field(default="lab_member", pattern="^(lab_member|new_tenant)$")
+    role: str | None = Field(None, pattern="^(user|lab_manager)$")
 
 
 class InvitationResponse(BaseModel):
@@ -96,6 +97,7 @@ class InvitationResponse(BaseModel):
     email: str
     invitation_type: str
     status: str
+    role: str | None = None
     created_at: datetime
     expires_at: datetime
     invited_by_name: str | None = None

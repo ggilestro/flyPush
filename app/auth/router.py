@@ -44,6 +44,8 @@ class EmailVerificationResponse(BaseModel):
 
     message: str
     success: bool = True
+    auto_logged_in: bool = False
+    is_new_tenant: bool = False
 
 
 class InvitationResponse(BaseModel):
@@ -109,12 +111,14 @@ async def register(
 async def verify_email(
     token: str,
     service: Annotated[AuthService, Depends(get_service)],
+    response: Response,
 ):
-    """Verify user's email address.
+    """Verify user's email address and auto-login.
 
     Args:
         token: Email verification token from URL.
         service: Auth service.
+        response: FastAPI response object.
 
     Returns:
         EmailVerificationResponse: Verification result.
@@ -130,7 +134,45 @@ async def verify_email(
             detail=message,
         )
 
-    return EmailVerificationResponse(message=message, success=True)
+    # Auto-login: generate tokens and set auth cookies
+    from app.auth.utils import create_access_token, create_refresh_token
+    from app.db.models import ADMIN_ROLES
+
+    auto_logged_in = False
+    is_new_tenant = False
+
+    if user.is_active and user.status.value == "approved":
+        access_token = create_access_token(user.id, user.tenant_id, user.email)
+        refresh_token = create_refresh_token(user.id, user.tenant_id, user.email)
+
+        _settings = get_settings()
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            max_age=_settings.access_token_expire_minutes * 60,
+            path="/",
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            max_age=_settings.refresh_token_expire_days * 24 * 60 * 60,
+            path="/",
+        )
+        auto_logged_in = True
+        is_new_tenant = user.role in ADMIN_ROLES
+
+    return EmailVerificationResponse(
+        message=message,
+        success=True,
+        auto_logged_in=auto_logged_in,
+        is_new_tenant=is_new_tenant,
+    )
 
 
 @router.post("/resend-verification")

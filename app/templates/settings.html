@@ -790,12 +790,13 @@
                 <input type="email" x-model="email" placeholder="colleague@university.edu"
                        @keydown.enter="sendInvitation()"
                        class="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border w-64">
-                {% if has_organization %}
-                <select x-model="invitationType" class="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-2 py-2 border">
-                    <option value="lab_member">Lab Member</option>
-                    <option value="new_tenant">New Lab</option>
+                <select x-model="inviteAs" class="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-2 py-2 border">
+                    <option value="member">Member</option>
+                    <option value="lab_manager">Lab Manager</option>
+                    {% if has_organization %}
+                    <option value="new_tenant">New Lab (PI)</option>
+                    {% endif %}
                 </select>
-                {% endif %}
                 <button @click="sendInvitation()" :disabled="sending || !email"
                         class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
                     <svg x-show="sending" class="animate-spin -ml-0.5 mr-1.5 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -915,6 +916,7 @@
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sent</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -928,6 +930,11 @@
                                                 <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
                                                       :class="inv.invitation_type === 'new_tenant' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
                                                       x-text="inv.invitation_type === 'new_tenant' ? 'New Lab' : 'Lab Member'"></span>
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap">
+                                                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
+                                                      :class="inv.role === 'lab_manager' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'"
+                                                      x-text="inv.role === 'lab_manager' ? 'Lab Manager' : 'Member'"></span>
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap">
                                                 <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
@@ -2134,7 +2141,7 @@ function teamManagement() {
         copied: false,
         copyingLink: false,
         email: '',
-        invitationType: 'lab_member',
+        inviteAs: 'member',
         sending: false,
         statusMessage: '',
         statusType: 'info',
@@ -2240,12 +2247,17 @@ function teamManagement() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ email: this.email, invitation_type: this.invitationType })
+                    body: JSON.stringify({
+                        email: this.email,
+                        invitation_type: this.inviteAs === 'new_tenant' ? 'new_tenant' : 'lab_member',
+                        role: this.inviteAs === 'lab_manager' ? 'lab_manager' : (this.inviteAs === 'member' ? 'user' : null)
+                    })
                 });
                 if (response.ok) {
                     this.statusMessage = `Invitation sent to ${this.email}`;
                     this.statusType = 'success';
                     this.email = '';
+                    this.inviteAs = 'member';
                     this.loadInvitations();
                 } else {
                     const error = await response.json();

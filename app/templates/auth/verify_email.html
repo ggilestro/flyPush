@@ -26,9 +26,25 @@
             </div>
             <h3 class="mt-4 text-lg font-medium text-gray-900">Email Verified!</h3>
             <p class="mt-2 text-gray-600" x-text="message"></p>
-            <a href="/login" class="mt-6 inline-block w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
-                Go to Login
-            </a>
+            <!-- New PI: onboarding -->
+            <template x-if="isNewTenant">
+                <button @click="window.location.href='/onboarding'"
+                        class="mt-6 inline-block w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                    Continue to Set Up Your Lab
+                </button>
+            </template>
+            <!-- Auto-logged-in member: go to dashboard -->
+            <template x-if="!isNewTenant && autoLoggedIn">
+                <a href="/" class="mt-6 inline-block w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                    Go to Dashboard
+                </a>
+            </template>
+            <!-- Not auto-logged-in: go to login -->
+            <template x-if="!isNewTenant && !autoLoggedIn">
+                <a href="/login" class="mt-6 inline-block w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                    Go to Login
+                </a>
+            </template>
         </div>
 
         <!-- Error state -->
@@ -101,6 +117,8 @@ function emailVerification(token) {
         resending: false,
         resendMessage: '',
         resendSuccess: false,
+        autoLoggedIn: false,
+        isNewTenant: false,
 
         async init() {
             if (this.token) {
@@ -116,6 +134,8 @@ function emailVerification(token) {
                 if (response.ok) {
                     this.success = true;
                     this.message = data.message;
+                    this.autoLoggedIn = data.auto_logged_in || false;
+                    this.isNewTenant = data.is_new_tenant || false;
                 } else {
                     this.success = false;
                     this.message = data.detail || 'Verification failed. The link may be invalid or expired.';

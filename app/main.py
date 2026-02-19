@@ -362,6 +362,41 @@ async def verify_email_page(request: Request, token: str | None = None):
     )
 
 
+@app.get("/onboarding", response_class=HTMLResponse)
+async def onboarding_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    access_token: str | None = Cookie(None),
+):
+    """Render the post-registration onboarding page for new PIs.
+
+    Args:
+        request: FastAPI request object.
+        db: Database session.
+        access_token: JWT access token from cookie.
+
+    Returns:
+        HTMLResponse or RedirectResponse.
+    """
+    from app.db.models import ADMIN_ROLES
+
+    current_user = get_current_user_from_cookie(db, access_token)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    if current_user.role not in ADMIN_ROLES:
+        return RedirectResponse(url="/", status_code=302)
+
+    return templates.TemplateResponse(
+        "auth/onboarding.html",
+        {
+            "request": request,
+            "title": "Set Up Your Lab",
+            "current_user": current_user,
+        },
+    )
+
+
 @app.get("/forgot-password", response_class=HTMLResponse)
 async def forgot_password_page(request: Request):
     """Render the forgot password page.

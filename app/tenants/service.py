@@ -365,6 +365,7 @@ class TenantService:
             token=token,
             status=InvitationStatus.PENDING,
             organization_id=tenant.organization_id,
+            role=data.role,
             expires_at=datetime.now(UTC) + timedelta(days=7),
         )
         self.db.add(invitation)
@@ -397,6 +398,7 @@ class TenantService:
             email=invitation.email,
             invitation_type=invitation.invitation_type.value,
             status=invitation.status.value,
+            role=invitation.role,
             created_at=invitation.created_at,
             expires_at=invitation.expires_at,
             invited_by_name=inviter_name,
@@ -452,6 +454,7 @@ class TenantService:
                     email=inv.email,
                     invitation_type=inv.invitation_type.value,
                     status=inv.status.value,
+                    role=inv.role,
                     created_at=inv.created_at,
                     expires_at=inv.expires_at,
                     invited_by_name=inviter.full_name if inviter else None,
