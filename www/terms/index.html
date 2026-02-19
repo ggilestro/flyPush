@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - flyRoom</title>
+    <meta name="description" content="Terms of Service for flyRoom, the Drosophila stock management platform.">
+    <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="bg-white text-gray-800 antialiased">
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 w-full bg-white/95 backdrop-blur-sm z-50 transition-shadow duration-200 nav-scrolled">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center gap-2">
+                    <img src="../img/logo.svg" alt="flyRoom" class="h-8 w-8">
+                    <span class="text-xl font-bold text-primary-600">flyRoom</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="/#features" class="text-gray-600 hover:text-primary-600 transition-colors text-sm font-medium">Features</a>
+                    <a href="/#pricing" class="text-gray-600 hover:text-primary-600 transition-colors text-sm font-medium">Pricing</a>
+                    <a href="https://app.flyroom.net" class="bg-primary-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">Get Started</a>
+                </div>
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100" aria-label="Toggle menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="mobile-nav" class="mobile-nav md:hidden">
+                <div class="py-3 space-y-2 border-t border-gray-100">
+                    <a href="/#features" class="block px-3 py-2 text-gray-600 hover:text-primary-600 text-sm font-medium">Features</a>
+                    <a href="/#pricing" class="block px-3 py-2 text-gray-600 hover:text-primary-600 text-sm font-medium">Pricing</a>
+                    <a href="https://app.flyroom.net" class="block px-3 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium text-center">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="pt-28 pb-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Terms of Service</h1>
+            <p class="text-sm text-gray-500 mb-10">Last updated: 19 February 2026</p>
+
+            <div class="prose prose-gray max-w-none space-y-8 text-gray-700 text-[15px] leading-relaxed">
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mt-0 mb-3">1. Introduction</h2>
+                    <p>These Terms of Service (&ldquo;Terms&rdquo;) govern your use of the flyRoom platform at <a href="https://app.flyroom.net" class="text-primary-600 hover:text-primary-500">app.flyroom.net</a> (the &ldquo;Service&rdquo;). By creating an account or using the Service, you agree to be bound by these Terms. If you do not agree, please do not use the Service.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">2. Who We Are</h2>
+                    <p>The Service is operated by Giorgio Gilestro, sole trader, trading as flyRoom.</p>
+                    <p>Contact: <a href="mailto:support@flyroom.net" class="text-primary-600 hover:text-primary-500">support@flyroom.net</a></p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">3. Eligibility</h2>
+                    <p>You must be at least 18 years of age or have authorisation from your institution to use the Service. flyRoom is intended for academic and research use, primarily by <em>Drosophila</em> research laboratories.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">4. Accounts &amp; Access</h2>
+                    <ul class="list-disc pl-5 space-y-2 mt-2">
+                        <li>Each person should maintain only one account.</li>
+                        <li>You are responsible for keeping your login credentials secure.</li>
+                        <li>A principal investigator (PI) creates the lab (tenant). Other members require admin approval to join the lab.</li>
+                        <li>You must not share your credentials with others or allow unauthorised access to your account.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">5. Service Description</h2>
+                    <p>flyRoom is a <em>Drosophila</em> stock management platform. Features include:</p>
+                    <ul class="list-disc pl-5 space-y-2 mt-2">
+                        <li>Stock tracking and organisation (genotypes, sources, locations, tags)</li>
+                        <li>Cross planning with AI-powered genotype prediction</li>
+                        <li>FlyBase integration for searching and importing stocks from public repositories</li>
+                        <li>Flip tracking with maintenance alerts and email reminders</li>
+                        <li>Label printing with QR codes and barcodes</li>
+                        <li>Collaborator sharing across labs and institutions</li>
+                        <li>Bulk import and export (CSV/Excel)</li>
+                    </ul>
+                    <p class="mt-2">Features may vary by subscription plan and may be updated from time to time.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">6. Subscriptions &amp; Billing</h2>
+                    <p>Purchases are processed by <strong>Paddle.com Market Limited</strong> as our Merchant of Record. Paddle handles all billing, invoicing, sales tax, and VAT as the legal seller of subscriptions. By purchasing a subscription, you also agree to <a href="https://www.paddle.com/legal/terms" target="_blank" rel="noopener" class="text-primary-600 hover:text-primary-500">Paddle&rsquo;s buyer terms</a>.</p>
+                    <p class="mt-2">flyRoom sets the features and limits for each plan (Free, Lite, Pro). We may change pricing or plan features with at least 30 days&rsquo; notice by email. Existing subscriptions will not be affected until their next renewal.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">7. Your Data &amp; Intellectual Property</h2>
+                    <p>You retain full ownership of all research data you enter into the Service, including stocks, genotypes, crosses, notes, and any other content you create.</p>
+                    <p class="mt-2">We claim no intellectual property rights over your data. We may use aggregated, anonymised usage statistics (such as feature usage counts) to improve the Service. Such statistics will never identify you, your lab, or your research.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">8. Acceptable Use</h2>
+                    <p>You agree not to:</p>
+                    <ul class="list-disc pl-5 space-y-2 mt-2">
+                        <li>Use the Service for any unlawful purpose or in violation of any applicable laws or regulations</li>
+                        <li>Scrape, crawl, or use automated tools to extract data from the Service</li>
+                        <li>Share your login credentials with others</li>
+                        <li>Upload malicious content, malware, or any material that could harm the Service or its users</li>
+                        <li>Abuse FlyBase integration rate limits or use the Service to overload third-party APIs</li>
+                        <li>Attempt to gain unauthorised access to other users&rsquo; accounts or data</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">9. Availability &amp; Disclaimers</h2>
+                    <p>The Service is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis, without warranties of any kind, whether express or implied.</p>
+                    <p class="mt-2">We aim for high availability but do not guarantee uninterrupted access. We may perform scheduled maintenance with reasonable notice. We are not liable for any data loss &mdash; you should maintain your own records and make use of the export functionality to keep local backups of your data.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">10. Limitation of Liability</h2>
+                    <p>To the maximum extent permitted by law:</p>
+                    <ul class="list-disc pl-5 space-y-2 mt-2">
+                        <li>Our total liability to you for any claims arising out of or related to the Service shall not exceed the total fees you have paid to us in the 12 months preceding the claim.</li>
+                        <li>We shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of data, revenue, or research outcomes.</li>
+                    </ul>
+                    <p class="mt-2">Nothing in these Terms excludes or limits liability for death or personal injury caused by negligence, fraud, or any other liability that cannot be excluded by law.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">11. Suspension &amp; Termination</h2>
+                    <ul class="list-disc pl-5 space-y-2 mt-2">
+                        <li>We may suspend or terminate your account if you breach these Terms or engage in activity that harms the Service or other users.</li>
+                        <li>You may delete your account at any time from your account settings.</li>
+                        <li>Upon termination, we will make your data available for export for 30 days. After this period, your data will be permanently deleted.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">12. Changes to These Terms</h2>
+                    <p>We may update these Terms from time to time. We will notify you by email at least 30 days before material changes take effect. Your continued use of the Service after changes take effect constitutes acceptance of the updated Terms.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">13. Governing Law</h2>
+                    <p>These Terms are governed by and construed in accordance with the laws of England and Wales. Any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
+                </section>
+
+                <section class="border-t border-gray-200 pt-6 mt-10">
+                    <p class="text-sm text-gray-500">If you have any questions about these Terms, please contact us at <a href="mailto:support@flyroom.net" class="text-primary-600 hover:text-primary-500">support@flyroom.net</a>.</p>
+                </section>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div class="flex items-center gap-3">
+                    <img src="../img/logo.svg" alt="flyRoom" class="h-8 w-8">
+                    <div>
+                        <span class="text-white font-semibold">flyRoom</span>
+                        <p class="text-sm text-gray-500">Stock management for <em>Drosophila</em> labs</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6 text-sm">
+                    <a href="/" class="hover:text-white transition-colors">Home</a>
+                    <a href="/terms" class="hover:text-white transition-colors">Terms</a>
+                    <a href="/privacy" class="hover:text-white transition-colors">Privacy</a>
+                    <a href="https://app.flyroom.net" class="hover:text-white transition-colors">Sign In</a>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
+                <p>&copy; 2026 Giorgio Gilestro. All rights reserved.</p>
+                <p>Contact: <a href="mailto:support@flyroom.net" class="hover:text-white transition-colors">support@flyroom.net</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileNav = document.getElementById('mobile-nav');
+        menuBtn.addEventListener('click', () => {
+            mobileNav.classList.toggle('open');
+        });
+        mobileNav.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileNav.classList.remove('open');
+            });
+        });
+    </script>
+</body>
+</html>
