@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class CollaboratorTenantInfo(BaseModel):
@@ -30,3 +30,16 @@ class TenantSearchResult(BaseModel):
     admin_email: str | None = None
     city: str | None = None
     country: str | None = None
+
+
+class CollaboratorInvitationCreate(BaseModel):
+    email: EmailStr
+
+
+class CollaboratorInvitationResponse(BaseModel):
+    id: str
+    email: str
+    status: str
+    created_at: datetime
+    expires_at: datetime
+    invited_by_name: str | None = None

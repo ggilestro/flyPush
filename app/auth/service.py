@@ -237,6 +237,8 @@ class AuthService:
                     return self._register_invited_member(data, invitation, base_url)
                 elif invitation.invitation_type == InvitationType.NEW_TENANT:
                     return self._register_invited_tenant(data, invitation, base_url)
+                elif invitation.invitation_type == InvitationType.COLLABORATOR:
+                    return self._register_invited_collaborator(data, invitation, base_url)
 
         # Fall through to existing registration paths
         if data.is_pi:
@@ -571,6 +573,88 @@ class AuthService:
             is_email_verified=True,
         )
         self.db.add(user)
+
+        # Mark invitation as accepted
+        TenantService.accept_invitation(self.db, invitation.token)
+
+        self.db.commit()
+        self.db.refresh(user)
+
+        return (
+            user,
+            None,
+            "Registration successful! You can now log in.",
+        )
+
+    def _register_invited_collaborator(
+        self, data: UserRegister, invitation, base_url: str = ""
+    ) -> tuple[User, Token | None, str]:
+        """Register a user via COLLABORATOR email invitation.
+
+        Creates a new lab (no organization) and establishes a collaborator
+        relationship back to the inviting tenant.
+
+        Args:
+            data: Registration data.
+            invitation: Validated Invitation model.
+            base_url: Base URL for verification email.
+
+        Returns:
+            tuple: Created user, None, and status message.
+
+        Raises:
+            ValueError: If email already registered.
+        """
+        from app.db.models import Collaborator
+        from app.tenants.service import TenantService
+
+        # Check if email already registered
+        existing = self.db.query(User).filter(User.email == data.email).first()
+        if existing:
+            raise ValueError("This email is already registered.")
+
+        # Determine lab name
+        lab_name = (
+            data.lab_name if data.lab_name else (data.organization or data.full_name + " Lab")
+        )
+
+        # Create tenant (lab) with no organization
+        slug_base = f"{lab_name}-{data.full_name}" if data.organization else data.full_name
+        slug = self._create_slug(slug_base)
+        tenant = Tenant(
+            name=lab_name,
+            slug=slug,
+            organization_id=None,
+            is_active=True,
+            invitation_token=self._generate_invitation_token(),
+            invitation_token_created_at=datetime.now(UTC),
+            city=data.city,
+            country=data.country,
+            trial_ends_at=datetime.now(UTC) + timedelta(days=90),
+        )
+        self.db.add(tenant)
+        self.db.flush()
+
+        # Create admin user (auto-approved, email pre-verified via invitation)
+        user = User(
+            tenant_id=tenant.id,
+            email=data.email,
+            password_hash=get_password_hash(data.password),
+            full_name=data.full_name,
+            role=UserRole.ADMIN,
+            status=UserStatus.APPROVED,
+            is_active=True,
+            is_email_verified=True,
+        )
+        self.db.add(user)
+
+        # Create collaborator relationship: inviting tenant -> new tenant
+        collab = Collaborator(
+            tenant_id=invitation.tenant_id,
+            collaborator_id=tenant.id,
+            created_by_id=invitation.invited_by_id,
+        )
+        self.db.add(collab)
 
         # Mark invitation as accepted
         TenantService.accept_invitation(self.db, invitation.token)

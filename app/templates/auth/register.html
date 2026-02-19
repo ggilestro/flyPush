@@ -19,7 +19,9 @@
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                 </svg>
                 <div class="ml-3">
-                    <p class="text-sm font-medium text-blue-800" x-text="invitationData.invitation_type === 'new_tenant'
+                    <p class="text-sm font-medium text-blue-800" x-text="invitationData.invitation_type === 'collaborator'
+                        ? 'You\'ve been invited to collaborate with ' + invitationData.tenant_name
+                        : invitationData.invitation_type === 'new_tenant'
                         ? 'You\'ve been invited to create a new lab in ' + invitationData.organization_name
                         : 'You\'ve been invited to join ' + invitationData.tenant_name"></p>
                     <p class="mt-1 text-sm text-blue-600">Complete the form below to accept the invitation.</p>
@@ -337,6 +339,36 @@
                 </div>
             </template>
 
+            <!-- Collaborator invitation: lab details -->
+            <template x-if="invitationData && invitationData.invitation_type === 'collaborator'">
+                <div class="space-y-4">
+                    <div class="bg-blue-50 rounded-md p-3">
+                        <p class="text-sm text-blue-700">Collaborating with: <strong x-text="invitationData.tenant_name"></strong></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Your Lab Name (optional)</label>
+                        <input type="text" x-model="form.labName"
+                               :placeholder="form.fullName ? form.fullName + ' Lab' : 'e.g., Smith Lab'"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                        <p class="mt-1 text-xs text-gray-500">Leave blank to use the default name</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Country</label>
+                        <div class="relative">
+                            <input type="text" x-model="countrySearch" @input="filterCountries()" @focus="showCountryDropdown = true; filterCountries()" @click.away="showCountryDropdown = false"
+                                   placeholder="Start typing your country..."
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm px-3 py-2 border">
+                            <div x-show="showCountryDropdown && filteredCountries.length > 0" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-48 rounded-md py-1 overflow-auto border border-gray-200">
+                                <template x-for="country in filteredCountries" :key="country">
+                                    <button type="button" @click="form.country = country; countrySearch = country; showCountryDropdown = false"
+                                            class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100" x-text="country"></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
             <!-- Terms -->
             <div class="flex items-start pt-4">
                 <input type="checkbox" x-model="form.acceptTerms" required
@@ -404,7 +436,7 @@ function registrationWizard(inviteToken, invitationData) {
                 if (this.invitationData.invitation_type === 'lab_member') {
                     return ['Your Details', 'Confirm'];
                 } else {
-                    // NEW_TENANT: need lab details
+                    // NEW_TENANT or COLLABORATOR: need lab details
                     return ['Your Details', 'Lab Details', 'Confirm'];
                 }
             }
@@ -452,6 +484,7 @@ function registrationWizard(inviteToken, invitationData) {
                     }
                 }
             }
+
         },
 
         get maxStep() {
@@ -469,7 +502,7 @@ function registrationWizard(inviteToken, invitationData) {
         },
 
         get isInstitutionStep() {
-            if (this.invitationData && this.invitationData.invitation_type === 'new_tenant') {
+            if (this.invitationData && (this.invitationData.invitation_type === 'new_tenant' || this.invitationData.invitation_type === 'collaborator')) {
                 return this.step === 1;
             }
             if (!this.invitationData) return this.step === 2;
@@ -622,6 +655,10 @@ function registrationWizard(inviteToken, invitationData) {
             if (this.invitationData && this.invitationData.invitation_type === 'new_tenant') {
                 data.is_pi = true;
                 data.organization = this.invitationData.organization_name;
+                if (this.form.labName) data.lab_name = this.form.labName;
+                if (this.form.country) data.country = this.form.country;
+            } else if (this.invitationData && this.invitationData.invitation_type === 'collaborator') {
+                data.is_pi = true;
                 if (this.form.labName) data.lab_name = this.form.labName;
                 if (this.form.country) data.country = this.form.country;
             } else if (this.invitationData) {

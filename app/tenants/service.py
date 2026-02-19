@@ -410,7 +410,10 @@ class TenantService:
         """
         invitations = (
             self.db.query(Invitation)
-            .filter(Invitation.tenant_id == self.tenant_id)
+            .filter(
+                Invitation.tenant_id == self.tenant_id,
+                Invitation.invitation_type != InvitationType.COLLABORATOR,
+            )
             .order_by(Invitation.created_at.desc())
             .all()
         )

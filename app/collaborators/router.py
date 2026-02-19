@@ -2,10 +2,16 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
-from app.collaborators.schemas import CollaboratorCreate, CollaboratorResponse, TenantSearchResult
+from app.collaborators.schemas import (
+    CollaboratorCreate,
+    CollaboratorInvitationCreate,
+    CollaboratorInvitationResponse,
+    CollaboratorResponse,
+    TenantSearchResult,
+)
 from app.collaborators.service import CollaboratorService
 from app.dependencies import CurrentAdmin, get_db
 
@@ -53,3 +59,52 @@ async def search_tenants(
     limit: int = Query(10, ge=1, le=50),
 ):
     return service.search_tenants(q, limit)
+
+
+# --- Invitation endpoints ---
+
+
+@router.post(
+    "/invitations",
+    response_model=CollaboratorInvitationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_collaborator_invitation(
+    data: CollaboratorInvitationCreate,
+    request: Request,
+    service: Annotated[CollaboratorService, Depends(get_service)],
+):
+    base_url = str(request.base_url).rstrip("/")
+    try:
+        return service.create_invitation(data.email, base_url)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/invitations", response_model=list[CollaboratorInvitationResponse])
+async def list_collaborator_invitations(
+    service: Annotated[CollaboratorService, Depends(get_service)],
+):
+    return service.list_invitations()
+
+
+@router.post("/invitations/{invitation_id}/cancel", status_code=status.HTTP_200_OK)
+async def cancel_collaborator_invitation(
+    invitation_id: str,
+    service: Annotated[CollaboratorService, Depends(get_service)],
+):
+    if not service.cancel_invitation(invitation_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found")
+    return {"ok": True}
+
+
+@router.post("/invitations/{invitation_id}/resend", status_code=status.HTTP_200_OK)
+async def resend_collaborator_invitation(
+    invitation_id: str,
+    request: Request,
+    service: Annotated[CollaboratorService, Depends(get_service)],
+):
+    base_url = str(request.base_url).rstrip("/")
+    if not service.resend_invitation(invitation_id, base_url):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found")
+    return {"ok": True}

@@ -142,6 +142,7 @@ class InvitationType(str, enum.Enum):
 
     LAB_MEMBER = "lab_member"  # Invitee joins the admin's lab
     NEW_TENANT = "new_tenant"  # Invitee creates a new lab in the same org
+    COLLABORATOR = "collaborator"  # Invitee creates a new lab as a collaborator
 
 
 class InvitationStatus(str, enum.Enum):

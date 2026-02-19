@@ -337,7 +337,15 @@ class EmailService:
         Returns:
             bool: True if sent successfully.
         """
-        if invitation_type == "new_tenant":
+        if invitation_type == "collaborator":
+            subject = f"{self.app_name} - You're invited to collaborate with {tenant_name}"
+            heading = f"You're invited to collaborate with {tenant_name}"
+            description = (
+                f"{inviter_name} from <strong>{tenant_name}</strong> has invited you to join "
+                f"{self.app_name} as a collaborator. Create your own lab and start sharing "
+                f"stocks with {tenant_name}."
+            )
+        elif invitation_type == "new_tenant":
             subject = f"{self.app_name} - You're invited to create a new lab in {organization_name}"
             heading = "You've been invited to create a new lab"
             description = (
