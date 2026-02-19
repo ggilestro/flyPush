@@ -4,14 +4,38 @@
 {% block page_title %}Database Backups{% endblock %}
 
 {% block content %}
-<div x-data="backupsPage()" class="space-y-6">
+<div x-data="backupsPage()" x-init="checkStorage()" class="space-y-6">
+    <!-- Storage Status -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="relative flex h-3 w-3">
+                    <template x-if="storageStatus === 'checking'">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    </template>
+                    <span class="relative inline-flex rounded-full h-3 w-3"
+                          :class="storageStatus === 'ok' ? 'bg-green-500' : storageStatus === 'error' ? 'bg-red-500' : 'bg-amber-400'"></span>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700">S3 Storage</h3>
+                    <p class="text-xs text-gray-500 mt-0.5" x-text="storageDetail"></p>
+                    <p x-show="storageEndpoint" class="text-xs text-gray-400 mt-0.5" x-text="storageEndpoint"></p>
+                </div>
+            </div>
+            <button @click="checkStorage()" :disabled="storageStatus === 'checking'"
+                    class="text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50">
+                Recheck
+            </button>
+        </div>
+    </div>
+
     <!-- Run Backup -->
     <div class="bg-white rounded-lg shadow p-6">
         <div class="flex items-center justify-between">
             <div>
                 <h3 class="text-sm font-semibold text-gray-700">Run Backup</h3>
                 <p class="text-sm text-gray-500 mt-1">
-                    Create an encrypted database backup and upload to Cloudflare R2.
+                    Create an encrypted database backup and upload to Garage S3.
                 </p>
             </div>
             <button @click="runBackup()" :disabled="running"
@@ -27,6 +51,33 @@
                     : 'bg-red-50 border-red-200 text-red-800'"
                  class="border rounded-lg px-4 py-3 text-sm">
                 <span x-text="message"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export SQL Dump -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-700">Export SQL Dump</h3>
+                <p class="text-sm text-gray-500 mt-1">
+                    Download a full database dump using <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">mariadb-dump</code>
+                    with <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">--single-transaction</code> for a consistent snapshot.
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input type="checkbox" x-model="compress" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                    Gzip
+                </label>
+                <form method="post" :action="'/api/export/sql' + (compress ? '?compress=true' : '')"
+                      @submit="exporting = true">
+                    <button type="submit" :disabled="exporting"
+                            class="px-5 py-2.5 bg-amber-600 text-white rounded text-sm font-medium hover:bg-amber-500 transition-colors disabled:opacity-50">
+                        <span x-show="!exporting">Download SQL Dump</span>
+                        <span x-show="exporting">Generating...</span>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -107,6 +158,36 @@ function backupsPage() {
         running: false,
         message: '',
         messageType: 'success',
+        storageStatus: 'checking',
+        storageDetail: 'Checking connection...',
+        storageEndpoint: '',
+        compress: false,
+        exporting: false,
+        async checkStorage() {
+            this.storageStatus = 'checking';
+            this.storageDetail = 'Checking connection...';
+            this.storageEndpoint = '';
+            try {
+                const resp = await fetch('/api/backup/storage-status');
+                const data = await resp.json();
+                if (data.ok) {
+                    const sizeMB = (data.total_size_bytes / 1048576).toFixed(1);
+                    this.storageStatus = 'ok';
+                    this.storageDetail = `${data.bucket} \u2014 ${data.object_count} object(s), ${sizeMB} MB total`;
+                    const parts = [];
+                    if (data.protocol) parts.push(data.protocol.toUpperCase());
+                    if (data.host) parts.push(data.host);
+                    if (data.service) parts.push(`(${data.service})`);
+                    this.storageEndpoint = parts.length ? parts.join(' \u2014 ') : '';
+                } else {
+                    this.storageStatus = 'error';
+                    this.storageDetail = `Connection failed: ${data.error}`;
+                }
+            } catch (e) {
+                this.storageStatus = 'error';
+                this.storageDetail = `Connection failed: ${e.message}`;
+            }
+        },
         async runBackup() {
             this.running = true;
             this.message = '';

@@ -139,11 +139,6 @@ def geography_page(request: Request, admin: str = Depends(require_admin)):
     return templates.TemplateResponse("geography.html", {"request": request, "admin": admin})
 
 
-@app.get("/export", response_class=HTMLResponse)
-def export_page(request: Request, admin: str = Depends(require_admin)):
-    return templates.TemplateResponse("export.html", {"request": request, "admin": admin})
-
-
 @app.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request, admin: str = Depends(require_admin)):
     return templates.TemplateResponse("settings.html", {"request": request, "admin": admin})
@@ -349,6 +344,57 @@ def _check_backup_auth(request: Request, x_cron_secret: str | None = Header(None
         return "cron"
     # Fall back to admin session auth
     return require_admin(request)
+
+
+@app.get("/api/backup/storage-status")
+def api_backup_storage_status(admin: str = Depends(require_admin)):
+    """Check S3/Garage connectivity and return bucket info with endpoint details."""
+    from urllib.parse import urlparse
+
+    endpoint = settings.r2_endpoint_url
+    parsed = urlparse(endpoint)
+    protocol = parsed.scheme or "unknown"
+    host = parsed.hostname or endpoint
+
+    try:
+        s3 = backup._get_s3_client()
+        resp = s3.list_objects_v2(Bucket=settings.r2_bucket_name, MaxKeys=1000)
+        count = resp.get("KeyCount", 0)
+        total_size = sum(obj.get("Size", 0) for obj in resp.get("Contents", []))
+
+        # Detect service type from response metadata
+        service = "S3-compatible"
+        headers = resp.get("ResponseMetadata", {}).get("HTTPHeaders", {})
+        server = headers.get("server", "")
+        if "garage" in server.lower():
+            service = "Garage"
+        elif "minio" in server.lower():
+            service = "MinIO"
+        elif "amazons3" in server.lower() or "amz" in server.lower():
+            service = "Amazon S3"
+
+        return {
+            "ok": True,
+            "endpoint": endpoint,
+            "protocol": protocol,
+            "host": host,
+            "service": service,
+            "bucket": settings.r2_bucket_name,
+            "object_count": count,
+            "total_size_bytes": total_size,
+        }
+    except Exception as exc:
+        return JSONResponse(
+            {
+                "ok": False,
+                "error": str(exc),
+                "endpoint": endpoint,
+                "protocol": protocol,
+                "host": host,
+                "bucket": settings.r2_bucket_name,
+            },
+            status_code=200,
+        )
 
 
 @app.post("/api/backup/run")
