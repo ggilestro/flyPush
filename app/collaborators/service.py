@@ -24,6 +24,7 @@ from app.db.models import (
     Tenant,
     User,
 )
+from app.security import escape_like
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class CollaboratorService:
         ]
         exclude_ids = [self.tenant_id] + existing_ids
 
-        like = f"%{query}%"
+        like = f"%{escape_like(query)}%"
 
         # Search by tenant name, or by any user's full_name or email in that tenant
         matching_tenant_ids_via_users = (

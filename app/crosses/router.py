@@ -394,8 +394,12 @@ async def send_cross_reminders(
 
     settings = get_settings()
 
+    import hmac
+
     expected_secret = getattr(settings, "cron_secret_key", None)
-    if expected_secret and x_cron_secret != expected_secret:
+    if expected_secret and (
+        not x_cron_secret or not hmac.compare_digest(x_cron_secret, expected_secret)
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid cron secret",

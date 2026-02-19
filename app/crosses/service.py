@@ -17,6 +17,7 @@ from app.crosses.schemas import (
     StockSummary,
 )
 from app.db.models import Cross, CrossOutcomeType, CrossStatus, Stock, StockOrigin
+from app.security import escape_like
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +211,7 @@ class CrossService:
 
         # Text search
         if params.query:
-            search_term = f"%{params.query}%"
+            search_term = f"%{escape_like(params.query)}%"
             query = query.filter(
                 or_(
                     Cross.name.ilike(search_term),

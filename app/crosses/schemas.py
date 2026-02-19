@@ -14,13 +14,13 @@ class CrossBase(BaseModel):
     parent_female_id: str
     parent_male_id: str
     planned_date: date | None = None
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=10000)
 
 
 class CrossCreate(CrossBase):
     """Schema for creating a cross."""
 
-    target_genotype: str | None = None
+    target_genotype: str | None = Field(None, max_length=5000)
     flip_days: int = Field(5, ge=1, le=30)
     virgin_collection_days: int = Field(12, ge=1, le=60)
     outcome_type: CrossOutcomeType = CrossOutcomeType.EPHEMERAL
@@ -40,9 +40,9 @@ class CrossUpdate(BaseModel):
     planned_date: date | None = None
     executed_date: date | None = None
     status: CrossStatus | None = None
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=10000)
     offspring_id: str | None = None
-    target_genotype: str | None = None
+    target_genotype: str | None = Field(None, max_length=5000)
     flip_days: int | None = Field(None, ge=1, le=30)
     virgin_collection_days: int | None = Field(None, ge=1, le=60)
     outcome_type: CrossOutcomeType | None = None
@@ -105,7 +105,7 @@ class CrossListResponse(BaseModel):
 class CrossSearchParams(BaseModel):
     """Schema for cross search parameters."""
 
-    query: str | None = None
+    query: str | None = Field(None, max_length=500)
     status: CrossStatus | None = None
     page: int = Field(1, ge=1)
     page_size: int = Field(20, ge=1, le=100)

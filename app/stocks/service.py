@@ -19,6 +19,7 @@ from app.db.models import (
     Tenant,
     Tray,
 )
+from app.security import escape_like
 from app.stocks.schemas import (
     AdjacentStocksResponse,
     OwnerInfo,
@@ -257,7 +258,8 @@ class StockService:
             query = query.filter(Stock.tenant_id != self.tenant_id)
 
         if params.query:
-            search_term = f"%{params.query}%"
+            escaped = escape_like(params.query)
+            search_term = f"%{escaped}%"
             query = query.filter(
                 or_(
                     Stock.stock_id.ilike(search_term),

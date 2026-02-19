@@ -48,6 +48,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
     debug=settings.debug,
+    docs_url="/docs" if not settings.is_production else None,
+    redoc_url="/redoc" if not settings.is_production else None,
+    openapi_url="/openapi.json" if not settings.is_production else None,
 )
 
 # CORS middleware
@@ -58,6 +61,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    """Add security headers to all responses."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    if settings.cookie_secure:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 
 @app.middleware("http")
@@ -126,7 +143,7 @@ async def refresh_token_middleware(request: Request, call_next):
             key="access_token",
             value=new_access_token,
             httponly=True,
-            secure=False,  # Set to True in production
+            secure=settings.cookie_secure,
             samesite="lax",
             max_age=settings.access_token_expire_minutes * 60,
             path="/",
@@ -136,7 +153,7 @@ async def refresh_token_middleware(request: Request, call_next):
             key="refresh_token",
             value=new_refresh_token,
             httponly=True,
-            secure=False,  # Set to True in production
+            secure=settings.cookie_secure,
             samesite="lax",
             max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
             path="/",

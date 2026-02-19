@@ -66,6 +66,16 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.7
     llm_max_tokens: int = 1024
 
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production mode."""
+        return self.environment == "production"
+
+    @property
+    def cookie_secure(self) -> bool:
+        """Whether cookies should use the Secure flag (HTTPS only)."""
+        return self.environment != "development"
+
     # Paddle billing
     paddle_api_key: str = ""
     paddle_environment: Literal["sandbox", "production"] = "sandbox"

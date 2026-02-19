@@ -20,6 +20,7 @@ from app.auth.schemas import (
 from app.auth.service import AuthService, get_auth_service
 from app.config import get_settings
 from app.dependencies import CurrentAdmin, CurrentUser, get_db
+from app.security import auth_limiter, strict_limiter
 
 router = APIRouter()
 
@@ -87,6 +88,8 @@ async def register(
     Raises:
         HTTPException: If registration fails.
     """
+    strict_limiter.check(request)
+
     try:
         # Get base URL for verification email
         base_url = get_settings().app_base_url.rstrip("/")
@@ -150,7 +153,7 @@ async def verify_email(
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=False,
+            secure=_settings.cookie_secure,
             samesite="lax",
             max_age=_settings.access_token_expire_minutes * 60,
             path="/",
@@ -159,7 +162,7 @@ async def verify_email(
             key="refresh_token",
             value=refresh_token,
             httponly=True,
-            secure=False,
+            secure=_settings.cookie_secure,
             samesite="lax",
             max_age=_settings.refresh_token_expire_days * 24 * 60 * 60,
             path="/",
@@ -191,6 +194,8 @@ async def resend_verification(
     Returns:
         EmailVerificationResponse: Result message.
     """
+    strict_limiter.check(request)
+
     from app.db.models import User
 
     # Find user by email
@@ -222,6 +227,7 @@ async def resend_verification(
 @router.post("/login")
 async def login(
     data: UserLogin,
+    request: Request,
     service: Annotated[AuthService, Depends(get_service)],
     response: Response,
 ):
@@ -229,6 +235,7 @@ async def login(
 
     Args:
         data: Login credentials.
+        request: FastAPI request object.
         service: Auth service.
         response: FastAPI response object.
 
@@ -238,6 +245,8 @@ async def login(
     Raises:
         HTTPException: If credentials are invalid or account not approved.
     """
+    auth_limiter.check(request)
+
     user, token, message = service.login(data)
 
     if not user or not token:
@@ -255,7 +264,7 @@ async def login(
         key="access_token",
         value=token.access_token,
         httponly=True,
-        secure=False,  # Set to True in production
+        secure=_settings.cookie_secure,
         samesite="lax",
         max_age=_settings.access_token_expire_minutes * 60,
         path="/",
@@ -264,7 +273,7 @@ async def login(
         key="refresh_token",
         value=token.refresh_token,
         httponly=True,
-        secure=False,  # Set to True in production
+        secure=_settings.cookie_secure,
         samesite="lax",
         max_age=_settings.refresh_token_expire_days * 24 * 60 * 60,
         path="/",
@@ -389,6 +398,8 @@ async def forgot_password(
     Returns:
         dict: Success message (always returns success to prevent email enumeration).
     """
+    strict_limiter.check(request)
+
     base_url = get_settings().app_base_url.rstrip("/")
     service.request_password_reset(data.email, base_url)
 
@@ -399,12 +410,14 @@ async def forgot_password(
 @router.post("/reset-password")
 async def reset_password(
     data: PasswordReset,
+    request: Request,
     service: Annotated[AuthService, Depends(get_service)],
 ):
     """Reset password using a reset token.
 
     Args:
         data: Password reset data with token and new password.
+        request: FastAPI request object.
         service: Auth service.
 
     Returns:
@@ -413,6 +426,8 @@ async def reset_password(
     Raises:
         HTTPException: If token is invalid or expired.
     """
+    strict_limiter.check(request)
+
     success, message = service.reset_password(data.token, data.new_password)
 
     if not success:

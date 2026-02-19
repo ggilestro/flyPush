@@ -64,15 +64,15 @@ class StockBase(BaseModel):
     """Base schema for stocks."""
 
     stock_id: str = Field(..., min_length=1, max_length=100)
-    genotype: str
+    genotype: str = Field(..., min_length=1, max_length=5000)
     shortname: str | None = Field(None, max_length=255)
     # Origin tracking
     origin: StockOrigin = StockOrigin.INTERNAL
     repository: StockRepository | None = None  # Only if origin=repository
     repository_stock_id: str | None = Field(None, max_length=50)
     external_source: str | None = Field(None, max_length=255)  # Only if origin=external
-    original_genotype: str | None = None  # Original from repository
-    notes: str | None = None
+    original_genotype: str | None = Field(None, max_length=5000)
+    notes: str | None = Field(None, max_length=10000)
 
 
 class StockCreate(StockBase):
@@ -91,15 +91,15 @@ class StockUpdate(BaseModel):
     """Schema for updating a stock."""
 
     stock_id: str | None = Field(None, min_length=1, max_length=100)
-    genotype: str | None = None
+    genotype: str | None = Field(None, max_length=5000)
     shortname: str | None = Field(None, max_length=255)
     # Origin tracking
     origin: StockOrigin | None = None
     repository: StockRepository | None = None
     repository_stock_id: str | None = Field(None, max_length=50)
     external_source: str | None = Field(None, max_length=255)
-    original_genotype: str | None = None
-    notes: str | None = None
+    original_genotype: str | None = Field(None, max_length=5000)
+    notes: str | None = Field(None, max_length=10000)
     tag_ids: list[str] | None = None
     tray_id: str | None = None
     position: str | None = Field(None, max_length=20)
@@ -148,10 +148,17 @@ class StockListResponse(BaseModel):
     pages: int
 
 
+class SortOrder(str, enum.Enum):
+    """Sort order enumeration."""
+
+    ASC = "asc"
+    DESC = "desc"
+
+
 class StockSearchParams(BaseModel):
     """Schema for stock search parameters."""
 
-    query: str | None = None
+    query: str | None = Field(None, max_length=500)
     tag_ids: list[str] | None = None
     origin: StockOrigin | None = None
     repository: StockRepository | None = None
@@ -164,7 +171,7 @@ class StockSearchParams(BaseModel):
     page: int = Field(1, ge=1)
     page_size: int = Field(20, ge=1, le=100)
     sort_by: str | None = Field(None, description="Field to sort by")
-    sort_order: str = Field("desc", description="Sort order (asc or desc)")
+    sort_order: SortOrder = Field(SortOrder.DESC, description="Sort order (asc or desc)")
 
 
 class AdjacentStocksResponse(BaseModel):
@@ -176,38 +183,41 @@ class AdjacentStocksResponse(BaseModel):
     next_stock_id: str | None = None
 
 
+MAX_BULK_IDS = 500
+
+
 class BulkVisibilityUpdate(BaseModel):
     """Schema for bulk visibility update."""
 
-    stock_ids: list[str] = Field(..., min_length=1)
+    stock_ids: list[str] = Field(..., min_length=1, max_length=MAX_BULK_IDS)
     visibility: StockVisibility
 
 
 class BulkTagsUpdate(BaseModel):
     """Schema for bulk tag add/remove."""
 
-    stock_ids: list[str] = Field(..., min_length=1)
-    tag_ids: list[str] = Field(..., min_length=1)
+    stock_ids: list[str] = Field(..., min_length=1, max_length=MAX_BULK_IDS)
+    tag_ids: list[str] = Field(..., min_length=1, max_length=100)
 
 
 class BulkTrayUpdate(BaseModel):
     """Schema for bulk tray change."""
 
-    stock_ids: list[str] = Field(..., min_length=1)
+    stock_ids: list[str] = Field(..., min_length=1, max_length=MAX_BULK_IDS)
     tray_id: str | None = None
 
 
 class BulkOwnerUpdate(BaseModel):
     """Schema for bulk owner change."""
 
-    stock_ids: list[str] = Field(..., min_length=1)
+    stock_ids: list[str] = Field(..., min_length=1, max_length=MAX_BULK_IDS)
     owner_id: str | None = None
 
 
 class BulkShareUpdate(BaseModel):
     """Schema for bulk collaborator share update."""
 
-    stock_ids: list[str] = Field(..., min_length=1)
+    stock_ids: list[str] = Field(..., min_length=1, max_length=MAX_BULK_IDS)
     shared_with_tenant_ids: list[str] = Field(default_factory=list)
 
 

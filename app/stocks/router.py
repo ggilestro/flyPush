@@ -19,6 +19,7 @@ from app.stocks.schemas import (
     BulkTrayUpdate,
     BulkUpdateResponse,
     BulkVisibilityUpdate,
+    SortOrder,
     StockCreate,
     StockListResponse,
     StockResponse,
@@ -60,7 +61,7 @@ async def list_stocks(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     sort_by: str | None = Query(None, description="Field to sort by"),
-    sort_order: str = Query("desc", description="Sort order (asc or desc)"),
+    sort_order: SortOrder = Query(SortOrder.DESC, description="Sort order (asc or desc)"),
 ):
     """List stocks with filtering and pagination.
 
@@ -299,7 +300,7 @@ async def get_adjacent_stocks(
     service: Annotated[StockService, Depends(get_service)],
     query: str | None = Query(None, alias="q", description="Search query"),
     sort_by: str | None = Query(None, description="Field to sort by"),
-    sort_order: str = Query("desc", description="Sort order (asc or desc)"),
+    sort_order: SortOrder = Query(SortOrder.DESC, description="Sort order (asc or desc)"),
     tag_ids: str | None = Query(None, description="Comma-separated tag IDs"),
     tray_id: str | None = Query(None, description="Filter by tray ID"),
 ):
