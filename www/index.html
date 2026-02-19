@@ -361,43 +361,140 @@
     <!-- Hardware Section -->
     <section id="hardware" class="py-20 md:py-28 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
+            <div class="text-center mb-12">
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Hardware Recommendations</h2>
-                <p class="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">Choosing the right label printer and barcode scanner for your lab.</p>
+                <p class="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">Choose the setup that fits your lab workstation.</p>
             </div>
 
-            <!-- Label Printers -->
-            <div class="mb-16">
-                <h3 class="text-xl font-semibold text-gray-900 mb-6">Label Printers</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Dymo -->
-                    <div class="bg-white rounded-xl p-6 border border-gray-200">
-                        <h4 class="font-semibold text-gray-900">Dymo LabelWriter 400</h4>
-                        <p class="text-sm text-primary-600 font-medium mt-1">Budget-friendly, Linux/CUPS</p>
-                        <p class="text-sm text-gray-500 mt-3">Great entry-level option with direct CUPS support on Linux. Uses standard Dymo label rolls.</p>
-                        <p class="text-sm font-medium text-gray-700 mt-4">~$100&ndash;200</p>
-                    </div>
+            <!-- Setup toggle -->
+            <div class="flex justify-center mb-12">
+                <div class="inline-flex rounded-lg bg-gray-200 p-1" id="hw-toggle">
+                    <button type="button" class="hw-tab px-5 py-2.5 rounded-md text-sm font-semibold transition-all bg-white text-gray-900 shadow-sm" data-target="hw-desktop">
+                        <svg class="w-4 h-4 inline-block mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Desktop
+                    </button>
+                    <button type="button" class="hw-tab px-5 py-2.5 rounded-md text-sm font-semibold transition-all text-gray-500" data-target="hw-android">
+                        <svg class="w-4 h-4 inline-block mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        Android Tablet
+                    </button>
+                </div>
+            </div>
 
-                    <!-- Brother -->
-                    <div class="bg-white rounded-xl p-6 border border-gray-200">
-                        <h4 class="font-semibold text-gray-900">Brother QL-820NWB</h4>
-                        <p class="text-sm text-primary-600 font-medium mt-1">Best value, WiFi + Bluetooth</p>
-                        <p class="text-sm text-gray-500 mt-3">Wireless printing over WiFi or Bluetooth. Excellent print quality with DK label rolls.</p>
-                        <p class="text-sm font-medium text-gray-700 mt-4">~$150&ndash;350</p>
-                    </div>
+            <!-- ==================== DESKTOP SETUP ==================== -->
+            <div id="hw-desktop">
+                <div class="mb-6 p-4 rounded-lg bg-primary-50 border border-primary-200 text-sm text-primary-800">
+                    <strong>Desktop setup</strong> &mdash; Linux, Windows, or macOS. Uses <strong>flyprint</strong> (desktop agent) to bridge the web app to a USB-connected label printer.
+                </div>
 
-                    <!-- Zebra -->
+                <!-- Desktop: Label Printers -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6">Label Printers</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 class="font-semibold text-gray-900">Brother QL-700</h4>
+                            <p class="text-sm text-amber-600 font-medium mt-1">Budget pick</p>
+                            <p class="text-sm text-gray-500 mt-3">USB only. Cheapest Brother QL option, same DK label rolls as the rest of the range. Auto-cutter included.</p>
+                            <p class="text-sm font-medium text-gray-700 mt-4">~&pound;40&ndash;60</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 class="font-semibold text-gray-900">Brother QL-800</h4>
+                            <p class="text-sm text-primary-600 font-medium mt-1">Mid-range, USB</p>
+                            <p class="text-sm text-gray-500 mt-3">USB only. Adds red/black printing and a slightly updated design over the QL-700. Same DK rolls.</p>
+                            <p class="text-sm font-medium text-gray-700 mt-4">~&pound;70&ndash;100</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 class="font-semibold text-gray-900">Dymo LabelWriter 400</h4>
+                            <p class="text-sm text-primary-600 font-medium mt-1">Budget, Linux/CUPS</p>
+                            <p class="text-sm text-gray-500 mt-3">Great entry-level option with direct CUPS support on Linux. Uses standard Dymo label rolls.</p>
+                            <p class="text-sm font-medium text-gray-700 mt-4">~$100&ndash;200</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 class="font-semibold text-gray-900">Zebra ZD421</h4>
+                            <p class="text-sm text-primary-600 font-medium mt-1">Enterprise, ZPL</p>
+                            <p class="text-sm text-gray-500 mt-3">Professional thermal printer with native ZPL command support. Best for high-volume labs.</p>
+                            <p class="text-sm font-medium text-gray-700 mt-4">~$300&ndash;600</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop: Barcode Scanner -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6">Barcode Scanner</h3>
+                    <div class="max-w-md">
+                        <div class="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 class="font-semibold text-gray-900 mb-2">Tera HW0002</h4>
+                            <p class="text-sm text-amber-600 font-medium mb-2">Budget pick &mdash; ~&pound;20</p>
+                            <p class="text-sm text-gray-500">Wired (USB) or wireless via 2.4&thinsp;GHz dongle. Reads 1D and 2D codes (Code128, QR). Plug-and-play &mdash; no drivers needed.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop: Print Agent -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6">Print Agent</h3>
                     <div class="bg-white rounded-xl p-6 border border-gray-200">
-                        <h4 class="font-semibold text-gray-900">Zebra ZD421</h4>
-                        <p class="text-sm text-primary-600 font-medium mt-1">Enterprise-grade, ZPL support</p>
-                        <p class="text-sm text-gray-500 mt-3">Professional thermal printer with native ZPL command support. Best for high-volume labs.</p>
-                        <p class="text-sm font-medium text-gray-700 mt-4">~$300&ndash;600</p>
+                        <h4 class="font-semibold text-gray-900 mb-2">flyprint <span class="text-xs font-normal text-gray-400">(desktop)</span></h4>
+                        <p class="text-sm text-gray-500">
+                            Free desktop agent that bridges the web app to your USB label printer.
+                            Runs on <strong class="text-gray-700">Linux, Windows, and macOS</strong>, connects to CUPS or native print services, and pairs with the web app automatically &mdash; zero configuration.
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Supported Label Formats -->
-            <div class="mb-16">
+            <!-- ==================== ANDROID TABLET SETUP ==================== -->
+            <div id="hw-android" class="hidden">
+                <div class="mb-6 p-4 rounded-lg bg-primary-50 border border-primary-200 text-sm text-primary-800">
+                    <strong>Android tablet setup</strong> &mdash; portable lab workstation. Uses <strong>flyprint for Android</strong> to print over Bluetooth or WiFi. No desktop computer required.
+                </div>
+
+                <!-- Android: Label Printers -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6">Label Printers</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl">
+                        <div class="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 class="font-semibold text-gray-900">Brother QL-820NWB</h4>
+                            <p class="text-sm text-primary-600 font-medium mt-1">Best value, WiFi + Bluetooth</p>
+                            <p class="text-sm text-gray-500 mt-3">Wireless printing over WiFi or Bluetooth. Excellent print quality with DK label rolls. Pairs directly with the Android tablet.</p>
+                            <p class="text-sm font-medium text-gray-700 mt-4">~$150&ndash;350</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 class="font-semibold text-gray-900">Zebra ZD421</h4>
+                            <p class="text-sm text-primary-600 font-medium mt-1">Enterprise, WiFi/Bluetooth</p>
+                            <p class="text-sm text-gray-500 mt-3">Professional thermal printer with wireless connectivity. Native ZPL support. Best for high-volume labs.</p>
+                            <p class="text-sm font-medium text-gray-700 mt-4">~$300&ndash;600</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Android: Barcode Scanner -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6">Barcode Scanner</h3>
+                    <div class="max-w-md">
+                        <div class="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 class="font-semibold text-gray-900 mb-2">Any Bluetooth Keyboard-Wedge Scanner</h4>
+                            <p class="text-sm text-amber-600 font-medium mb-2">$50&ndash;100</p>
+                            <p class="text-sm text-gray-500">Pairs over Bluetooth and appears as a keyboard input &mdash; no drivers needed. Supports Code128 barcodes and QR codes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Android: Print Agent -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6">Print Agent</h3>
+                    <div class="bg-white rounded-xl p-6 border border-gray-200">
+                        <h4 class="font-semibold text-gray-900 mb-2">flyprint <span class="text-xs font-normal text-gray-400">(Android)</span></h4>
+                        <p class="text-sm text-gray-500">
+                            Native Android app that runs as a background service on your tablet.
+                            Discovers printers over <strong class="text-gray-700">Bluetooth or WiFi</strong>, polls the server for print jobs, and prints labels automatically.
+                        </p>
+                        <p class="text-xs text-amber-600 font-medium mt-3">Coming soon &mdash; currently in development.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supported Label Formats (shared) -->
+            <div class="mb-4">
                 <h3 class="text-xl font-semibold text-gray-900 mb-6">Supported Label Formats</h3>
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <table class="w-full text-sm">
@@ -441,44 +538,6 @@
                             </tr>
                         </tbody>
                     </table>
-                </div>
-            </div>
-
-            <!-- Barcode Scanners -->
-            <div class="mb-16">
-                <h3 class="text-xl font-semibold text-gray-900 mb-6">Barcode Scanners</h3>
-                <div class="bg-white rounded-xl p-6 border border-gray-200">
-                    <div class="flex flex-col md:flex-row gap-6">
-                        <div class="flex-1">
-                            <h4 class="font-semibold text-gray-900 mb-2">Any Bluetooth Keyboard-Wedge Scanner</h4>
-                            <p class="text-sm text-gray-500">flyRoom works with any standard Bluetooth barcode scanner ($50&ndash;100). The scanner appears as a keyboard input &mdash; no drivers needed.</p>
-                            <ul class="mt-4 space-y-2">
-                                <li class="flex items-center gap-2 text-sm text-gray-600">
-                                    <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    Supports Code128 barcodes and QR codes
-                                </li>
-                                <li class="flex items-center gap-2 text-sm text-gray-600">
-                                    <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    Plug-and-play &mdash; no driver installation
-                                </li>
-                                <li class="flex items-center gap-2 text-sm text-gray-600">
-                                    <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    Instant stock lookup from any page
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Print Agent -->
-            <div>
-                <h3 class="text-xl font-semibold text-gray-900 mb-6">Print Agent (flyprint)</h3>
-                <div class="bg-white rounded-xl p-6 border border-gray-200">
-                    <p class="text-sm text-gray-500">
-                        flyRoom includes <strong class="text-gray-900">flyprint</strong>, a free desktop print agent that bridges the web app to your local label printer.
-                        It runs on Linux and Windows, connects to CUPS or native print services, and pairs with the web app automatically &mdash; zero configuration required.
-                    </p>
                 </div>
             </div>
         </div>
@@ -534,6 +593,21 @@
         mobileNav.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
                 mobileNav.classList.remove('open');
+            });
+        });
+
+        // Hardware setup toggle (Desktop / Android Tablet)
+        document.querySelectorAll('.hw-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.target;
+                document.querySelectorAll('.hw-tab').forEach(b => {
+                    b.classList.toggle('bg-white', b === btn);
+                    b.classList.toggle('text-gray-900', b === btn);
+                    b.classList.toggle('shadow-sm', b === btn);
+                    b.classList.toggle('text-gray-500', b !== btn);
+                });
+                document.getElementById('hw-desktop').classList.toggle('hidden', target !== 'hw-desktop');
+                document.getElementById('hw-android').classList.toggle('hidden', target !== 'hw-android');
             });
         });
     </script>
