@@ -1,3 +1,144 @@
+# flyRoom Feature Roadmap
+
+**Created:** 2026-02-21
+**Status:** Active
+
+---
+
+## High Priority
+
+### 1. Stock Genealogy / Pedigree Visualization
+- [ ] D3.js or Mermaid-based tree/graph view of parent-offspring relationships
+- [ ] Trace lineage across generations through linked crosses
+- [ ] Navigate from any stock to its full ancestry and descendants
+- [ ] Visual indicators for cross status (completed, failed, in-progress)
+- **Rationale:** Data already exists in Cross model (parents + offspring). Unique differentiator vs spreadsheets.
+
+### 2. Dashboard Improvements
+- [ ] Stocks needing attention widget (overdue flips, crosses needing action)
+- [ ] Recent lab activity feed (who did what, when)
+- [ ] Quick-action buttons (flip overdue stocks, continue pending crosses)
+- [ ] Simple charts: stocks added over time, flip compliance rate, cross success rate
+- **Rationale:** Current dashboard shows basic stats only. First thing users see daily.
+
+### ~~3. Complete Import Conflict Resolution (Phases 2-6)~~ ✅ DONE
+- [x] `RowConflict` / `ConflictingRow` schemas
+- [x] Extensible `ConflictDetector` architecture (rule-based + future LLM)
+- [x] `detect_conflicts()` for coalesce, genotype mismatch, duplicate, missing required, repository match
+- [x] Phase 1/Phase 2 backend endpoints with session storage (30-min TTL)
+- [x] Conflict resolution UI (Step 5 in import wizard)
+- [x] "Resolve All" batch actions per conflict type
+- [x] Full test coverage: 66 tests in `test_conflict_resolution.py` (506 total pass)
+- **Completed:** 2026-02-21
+
+---
+
+## Medium Priority
+
+### 4. Filtered CSV/Excel Export
+- [ ] Export current filtered stock list as CSV or Excel
+- [ ] Respect active search, tag, tray, and sort filters
+- [ ] Column selection (choose which fields to export)
+- [ ] Export from stock list page via button
+- **Rationale:** Researchers need stock lists for publications, grants, collaborator communication.
+
+### 5. Mobile QR Scanning Workflow
+- [ ] Camera-based QR code reader using Web API (navigator.mediaDevices)
+- [ ] Scan vial QR -> jump to stock detail page
+- [ ] One-tap flip from scan result
+- [ ] Optional: scan-and-print (flip + new label in one action)
+- **Rationale:** PWA exists, labels have QR codes, but no way to scan them from the app itself.
+
+### 6. Activity Feed / Audit Log
+- [ ] Centralized event log model (who, what, when, entity_type, entity_id)
+- [ ] Record key events: stock CRUD, flips, crosses, imports, user management
+- [ ] Dashboard widget showing recent lab activity
+- [ ] Per-stock activity history on detail page
+- [ ] Optional: filterable activity page
+- **Rationale:** Essential for lab awareness in teams. Data partially exists via timestamps.
+
+### 7. Smart Notifications / Weekly Digest
+- [ ] Aggregate all pending actions into a single digest email
+- [ ] Include: overdue flips, pending cross actions, pending stock requests, new activity
+- [ ] Configurable frequency (daily/weekly) per user
+- [ ] Replace or complement existing individual reminder emails
+- **Rationale:** Reduces email noise while ensuring nothing is missed.
+
+### 8. Stock Deduplication / Merge
+- [ ] Detect potential duplicates (same genotype, different IDs)
+- [ ] LLM-powered fuzzy genotype matching
+- [ ] Merge UI: choose which fields to keep from each duplicate
+- [ ] Redirect references (crosses, flip history, tags) to surviving stock
+- **Rationale:** Common problem when multiple people manage stocks or after bulk imports.
+
+### 9. Advanced Search / Saved Filters
+- [ ] Save frequently-used search/filter combinations with a name
+- [ ] Quick-access links in sidebar or stock list page
+- [ ] Shareable filter URLs
+- [ ] Suggested filters based on usage patterns
+- **Rationale:** Power users filter the same way repeatedly (e.g., "all balancers in Tray A").
+
+### 10. Genotype Parser / Validator
+- [ ] Parse Drosophila genotype notation into structured components
+- [ ] Validate against known FlyBase gene/allele symbols
+- [ ] Flag potential typos or non-standard notation
+- [ ] Suggest corrections
+- **Rationale:** Genotype strings are error-prone; validation catches mistakes early.
+
+---
+
+## Lower Priority
+
+### 11. Background Task Queue
+- [ ] Replace cron-triggered HTTP endpoints with proper task runner (arq, dramatiq, or asyncio)
+- [ ] Handle: reminders, FlyBase data refresh, backup scheduling
+- [ ] Task status monitoring in admin
+- **Rationale:** Current cron-over-HTTP works but is fragile. Better reliability for production.
+
+### 12. Webhook / API Integration
+- [ ] Configurable webhooks per tenant for key events
+- [ ] Events: stock created, cross completed, flip overdue, request received
+- [ ] Slack integration template
+- [ ] API documentation (OpenAPI is auto-generated, but webhook docs needed)
+- **Rationale:** Enables integration with lab notebooks, Slack, and custom automation.
+
+### 13. Tray Grid Visualization
+- [ ] Visual grid showing tray positions with color-coded stock status
+- [ ] Click position to view/edit stock
+- [ ] Empty position indicators
+- [ ] Drag-and-drop stock relocation between positions
+- **Rationale:** Better spatial awareness than a table, especially for grid-type trays.
+
+### 14. Dark Mode
+- [ ] Tailwind CSS dark mode toggle
+- [ ] Persist preference in user settings
+- [ ] Respect system preference by default
+- **Rationale:** Quality of life; increasingly expected in modern web apps.
+
+### 15. Public Lab Catalog / Profile Pages
+- [ ] Public-facing page per lab showing shared stocks
+- [ ] Lab description, contact info, stock counts
+- [ ] Searchable catalog for organization-wide discovery
+- **Rationale:** Improves discoverability within an organization.
+
+### 16. Multi-Language Support (i18n)
+- [ ] Extract all user-facing strings to translation files
+- [ ] Support at minimum: English, Japanese, German, French
+- [ ] Language selector in user settings
+- **Rationale:** Drosophila labs exist worldwide; localization expands user base.
+
+---
+
+## Discovered During Work
+_(Add new tasks found during implementation here)_
+
+---
+---
+
+# Completed Tasks
+
+---
+
 # Move Admin Panel into Settings Tab
 
 ## Current Task
@@ -999,7 +1140,7 @@ Phase 2: Conflict Resolution
   - `MISSING_REQUIRED` - Required field empty even after coalesce
   - `VALIDATION_ERROR` - Data format/validation issues
   - `LLM_FLAGGED` - (Future) LLM detected potential issue
-- [ ] Create `RowConflict` schema with:
+- [x] Create `RowConflict` schema with:
   - `row_index: int`
   - `conflict_type: ConflictType`
   - `field: str` (which field has the conflict)
@@ -1009,12 +1150,12 @@ Phase 2: Conflict Resolution
   - `confidence: Optional[float]` - (Future) For LLM-based detection confidence score
   - `suggestion: Optional[str]` - (Future) LLM-suggested resolution
   - `detector: str` - Which detector found this ("rule", "llm", etc.)
-- [ ] Create `ConflictingRow` schema grouping all conflicts for a single row
-- [ ] **Design extensible conflict detection architecture** (see below)
-- [ ] Implement `detect_conflicts()` function in `parsers.py`
-- [ ] Add conflict detection for coalesce scenarios
-- [ ] Add conflict detection for genotype mismatch (when fetching BDSC/VDRC data)
-- [ ] Add unit tests for conflict detection
+- [x] Create `ConflictingRow` schema grouping all conflicts for a single row
+- [x] **Design extensible conflict detection architecture** (see below)
+- [x] Implement `detect_conflicts()` function in `conflict_detectors.py`
+- [x] Add conflict detection for coalesce scenarios
+- [x] Add conflict detection for genotype mismatch (when fetching BDSC/VDRC data)
+- [x] Add unit tests for conflict detection (66 tests in test_conflict_resolution.py)
 
 #### Extensible Conflict Detection Architecture
 Design the conflict detection system to allow future LLM integration:
@@ -1095,89 +1236,67 @@ def get_conflict_detector() -> ConflictDetector:
 5. **Cross-row analysis** - Detect patterns across the entire import batch
 
 ### Phase 3: Two-Phase Import Backend ✅
-- [ ] Create `ImportPhase1Result` schema:
+- [x] Create `ImportPhase1Result` schema:
   - `imported_count: int`
   - `imported_stock_ids: list[str]`
   - `conflicting_rows: list[ConflictingRow]`
   - `conflict_summary: dict[ConflictType, int]` (count by type)
-- [ ] Create `ConflictResolution` schema:
+- [x] Create `ConflictResolution` schema:
   - `row_index: int`
   - `resolution_type: str` ("use_value", "skip", "manual")
   - `resolved_values: dict[str, str]` (field → chosen value)
-- [ ] Create `ImportPhase2Request` schema:
+- [x] Create `ImportPhase2Request` schema:
   - `resolutions: list[ConflictResolution]`
   - `session_id: str` (to link with phase 1 data)
-- [ ] Add `/api/imports/execute-v2-phase1` endpoint:
+- [x] Add `/api/imports/execute-v2-phase1` endpoint:
   - Process file with user mappings
   - Detect conflicts in each row
   - Import clean rows immediately
   - Store conflicting rows in session/cache for phase 2
   - Return `ImportPhase1Result`
-- [ ] Add `/api/imports/execute-v2-phase2` endpoint:
+- [x] Add `/api/imports/execute-v2-phase2` endpoint:
   - Accept user resolutions
   - Apply resolutions to conflicting rows
   - Import resolved rows
   - Return final `ImportExecuteResult`
-- [ ] Implement session storage for conflicting rows (Redis or in-memory with TTL)
+- [x] Implement session storage for conflicting rows (in-memory with 30-min TTL)
 
 ### Phase 4: Genotype Mismatch Detection ✅
-- [ ] During phase 1, when `repository_stock_id` is mapped:
-  - Fetch metadata from BDSC/VDRC plugin
+- [x] During phase 1, when `repository_stock_id` is mapped:
+  - Fetch metadata from FlyBase plugin
   - Compare local `genotype` with remote `genotype`
   - If mismatch, create `GENOTYPE_MISMATCH` conflict
-- [ ] Include both local and remote genotype in conflict details
-- [ ] Allow user to choose: use local, use remote, or skip
+- [x] Include both local and remote genotype in conflict details
+- [x] Allow user to choose: use local, use remote, or skip
 
 ### Phase 5: Conflict Resolution UI ✅
-- [ ] Add Step 4: "Resolve Conflicts" after Step 3 in import wizard
-- [ ] Only show Step 4 if phase 1 returns conflicting rows
-- [ ] Create conflict summary card showing counts by type
-- [ ] Create conflict table with:
+- [x] Add Step 5: "Resolve Conflicts" after preview in import wizard
+- [x] Only show Step 5 if phase 1 returns conflicting rows
+- [x] Create conflict summary card showing counts by type
+- [x] Create conflict table with:
   - Row number
   - Conflict type badge
   - Conflicting values side-by-side
   - Resolution buttons/dropdown
-- [ ] For `COALESCE_CONFLICT`:
-  ```
-  ┌─────────────────────────────────────────────────────────────┐
-  │ Row 15: Multiple values for Repository Stock ID             │
-  │                                                             │
-  │   BDSC column: 12345                                        │
-  │   VDRC column: v98765                                       │
-  │                                                             │
-  │   [Use "12345"] [Use "v98765"] [Skip Row] [Enter: ____]     │
-  └─────────────────────────────────────────────────────────────┘
-  ```
-- [ ] For `GENOTYPE_MISMATCH`:
-  ```
-  ┌─────────────────────────────────────────────────────────────┐
-  │ Row 23: Genotype mismatch with BDSC #3605                   │
-  │                                                             │
-  │   Your file:  w[1118]; P{GAL4-da.G32}UH1                    │
-  │   BDSC says:  w[1118]; P{da-GAL4.w[-]}3                     │
-  │                                                             │
-  │   [Use mine] [Use BDSC] [Skip Row]                          │
-  └─────────────────────────────────────────────────────────────┘
-  ```
-- [ ] Add "Resolve All" batch actions:
-  - "Skip all conflicts of this type"
-  - "Use first value for all coalesce conflicts"
-  - "Use remote genotype for all mismatches"
-- [ ] Track resolution state in Alpine.js
-- [ ] Submit resolutions to phase 2 endpoint
-- [ ] Show final results after phase 2 completes
+- [x] Coalesce conflict UI (choose between values or enter manual)
+- [x] Genotype mismatch UI (use local, use remote, or skip)
+- [x] Add "Resolve All" batch actions per conflict type
+- [x] Track resolution state in Alpine.js
+- [x] Submit resolutions to phase 2 endpoint
+- [x] Show final results after phase 2 completes
 
 ### Phase 6: Testing ✅
-- [ ] Test coalesce mapping with single non-empty value
-- [ ] Test coalesce conflict detection (both values present)
-- [ ] Test genotype mismatch detection
-- [ ] Test phase 1 import (clean rows imported, conflicts returned)
-- [ ] Test phase 2 import (resolutions applied correctly)
-- [ ] Test UI flow end-to-end
-- [ ] Test edge cases:
+- [x] Test coalesce mapping with single non-empty value
+- [x] Test coalesce conflict detection (both values present)
+- [x] Test genotype mismatch detection
+- [x] Test phase 1 import (clean rows imported, conflicts returned)
+- [x] Test phase 2 import (resolutions applied correctly)
+- [x] Test end-to-end flow (phase 1 → resolve → phase 2)
+- [x] Test edge cases:
   - All rows clean (no phase 2 needed)
   - All rows conflicting (nothing imported in phase 1)
   - Mixed scenarios
+- [x] **66 tests in `tests/test_imports/test_conflict_resolution.py`**
 
 ## API Endpoints
 
