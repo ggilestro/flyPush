@@ -1,209 +1,482 @@
 {% extends "base.html" %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
-    <p class="mt-1 text-sm text-gray-500">Welcome to {{ app_name }}</p>
-</div>
+<div x-data="dashboard()" x-init="loadDashboard()">
 
-<!-- Stats cards -->
-<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-    <!-- Total Stocks -->
-    <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Total Stocks</dt>
-                        <dd class="text-lg font-semibold text-gray-900" id="stat-stocks">{{ stats.total_stocks or 0 }}</dd>
-                    </dl>
-                </div>
+    <!-- Loading skeleton -->
+    <template x-if="loading">
+        <div class="space-y-6 animate-pulse">
+            <div class="h-8 bg-gray-200 rounded w-48"></div>
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="h-28 bg-gray-200 rounded-lg"></div>
+                <div class="h-28 bg-gray-200 rounded-lg"></div>
+                <div class="h-28 bg-gray-200 rounded-lg"></div>
+                <div class="h-28 bg-gray-200 rounded-lg"></div>
+            </div>
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div class="h-64 bg-gray-200 rounded-lg"></div>
+                <div class="h-64 bg-gray-200 rounded-lg"></div>
             </div>
         </div>
-        <div class="bg-gray-50 px-5 py-3">
-            <div class="text-sm">
-                <a href="/stocks" class="font-medium text-primary-600 hover:text-primary-500">View all</a>
-            </div>
-        </div>
-    </div>
+    </template>
 
-    <!-- Active Crosses -->
-    <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+    <template x-if="!loading">
+        <div>
+            <!-- Header -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+                <p class="mt-1 text-sm text-gray-500">Welcome to {{ app_name }}</p>
+            </div>
+
+            <!-- Attention Banner -->
+            <template x-if="data.flip_alerts.length > 0 || data.cross_reminders.length > 0">
+                <div class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <svg class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <h2 class="text-sm font-semibold text-amber-800">Needs Your Attention</h2>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <!-- Overdue Flips -->
+                        <template x-if="data.flip_alerts.length > 0">
+                            <div>
+                                <h3 class="text-xs font-medium text-amber-700 uppercase tracking-wide mb-2">Overdue Flips</h3>
+                                <ul class="space-y-1">
+                                    <template x-for="alert in data.flip_alerts" :key="alert.stock_id">
+                                        <li class="flex items-center justify-between text-sm">
+                                            <a :href="'/stocks/' + alert.stock_id" class="text-amber-900 hover:underline font-medium" x-text="alert.stock_display_id"></a>
+                                            <span class="flex items-center gap-2">
+                                                <span class="text-xs text-amber-600" x-text="alert.days_since_flip != null ? alert.days_since_flip + 'd ago' : 'Never flipped'"></span>
+                                                <span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium"
+                                                      :class="alert.flip_status === 'critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'"
+                                                      x-text="alert.flip_status"></span>
+                                            </span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+
+                        <!-- Cross Reminders -->
+                        <template x-if="data.cross_reminders.length > 0">
+                            <div>
+                                <h3 class="text-xs font-medium text-amber-700 uppercase tracking-wide mb-2">Cross Actions Due</h3>
+                                <ul class="space-y-1">
+                                    <template x-for="r in data.cross_reminders" :key="r.cross_id + r.event_type">
+                                        <li class="flex items-center justify-between text-sm">
+                                            <a :href="'/crosses/' + r.cross_id" class="text-amber-900 hover:underline font-medium"
+                                               x-text="(r.cross_name || r.female_stock_id + ' x ' + r.male_stock_id)"></a>
+                                            <span class="flex items-center gap-2">
+                                                <span class="text-xs px-1.5 py-0.5 rounded"
+                                                      :class="r.days_until < 0 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'"
+                                                      x-text="r.event_type === 'flip' ? 'Flip' : 'Virgins'"></span>
+                                                <span class="text-xs text-amber-600"
+                                                      x-text="r.days_until < 0 ? Math.abs(r.days_until) + 'd overdue' : r.days_until === 0 ? 'Today' : 'Tomorrow'"></span>
+                                            </span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                    </div>
                 </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Active Crosses</dt>
-                        <dd class="text-lg font-semibold text-gray-900" id="stat-crosses">{{ stats.active_crosses or 0 }}</dd>
-                    </dl>
+            </template>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+                <!-- Total Stocks -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Total Stocks</dt>
+                                    <dd class="text-lg font-semibold text-gray-900" x-text="data.stats.total_stocks"></dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-5 py-3">
+                        <div class="text-sm">
+                            <a href="/stocks" class="font-medium text-primary-600 hover:text-primary-500">View all</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Crosses -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Active Crosses</dt>
+                                    <dd class="text-lg font-semibold text-gray-900" x-text="data.stats.active_crosses"></dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-5 py-3">
+                        <div class="text-sm">
+                            <a href="/crosses" class="font-medium text-primary-600 hover:text-primary-500">View all</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Tags</dt>
+                                    <dd class="text-lg font-semibold text-gray-900" x-text="data.stats.total_tags"></dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-5 py-3">
+                        <div class="text-sm">
+                            <a href="/tags" class="font-medium text-primary-600 hover:text-primary-500">Manage</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New This Week -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">New This Week</dt>
+                                    <dd class="text-lg font-semibold text-gray-900" x-text="data.stats.recent_stocks_7d"></dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-5 py-3">
+                        <div class="text-sm">
+                            <span class="text-gray-500">Last 7 days</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="bg-gray-50 px-5 py-3">
-            <div class="text-sm">
-                <a href="/crosses" class="font-medium text-primary-600 hover:text-primary-500">View all</a>
-            </div>
-        </div>
-    </div>
 
-    <!-- Tags -->
-    <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Tags</dt>
-                        <dd class="text-lg font-semibold text-gray-900" id="stat-tags">{{ stats.total_tags or 0 }}</dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
-        <div class="bg-gray-50 px-5 py-3">
-            <div class="text-sm">
-                <a href="/tags" class="font-medium text-primary-600 hover:text-primary-500">Manage</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Recent Updates</dt>
-                        <dd class="text-lg font-semibold text-gray-900" id="stat-recent">{{ stats.recent_updates or 0 }}</dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
-        <div class="bg-gray-50 px-5 py-3">
-            <div class="text-sm">
-                <span class="text-gray-500">Last 7 days</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Quick actions -->
-<div class="mt-8">
-    <h2 class="text-lg font-medium text-gray-900">Quick Actions</h2>
-    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <a href="/stocks/wizard" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span class="mt-2 block text-sm font-semibold text-gray-900">Add New Stock</span>
-        </a>
-
-        <a href="/crosses/new" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span class="mt-2 block text-sm font-semibold text-gray-900">Plan a Cross</span>
-        </a>
-
-        <a href="/stocks/import" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span class="mt-2 block text-sm font-semibold text-gray-900">Import Stocks</span>
-        </a>
-    </div>
-</div>
-
-<!-- Recent stocks -->
-<div class="mt-8">
-    <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium text-gray-900">Recent Stocks</h2>
-        <a href="/stocks" class="text-sm font-medium text-primary-600 hover:text-primary-500">View all</a>
-    </div>
-    <div class="mt-4" id="recent-stocks" x-data="recentStocks()" x-init="loadStocks()">
-        <template x-if="loading">
-            <div class="animate-pulse">
-                <div class="h-20 bg-gray-200 rounded"></div>
-            </div>
-        </template>
-
-        <template x-if="!loading && stocks.length === 0">
-            <div class="bg-white shadow rounded-lg p-6 text-center">
-                <p class="text-sm text-gray-500">No stocks yet. <a href="/stocks/new" class="text-primary-600 hover:text-primary-500">Add your first stock</a>.</p>
-            </div>
-        </template>
-
-        <template x-if="!loading && stocks.length > 0">
-            <div class="bg-white shadow overflow-hidden rounded-lg">
-                <ul class="divide-y divide-gray-200">
-                    <template x-for="stock in stocks" :key="stock.id">
-                        <li>
-                            <a :href="'/stocks/' + stock.id" class="block hover:bg-gray-50">
-                                <div class="px-4 py-4 sm:px-6">
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-sm font-medium text-primary-600 truncate" x-text="stock.stock_id"></p>
-                                        <div class="ml-2 flex-shrink-0 flex">
-                                            <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800" x-text="stock.source || 'Local'"></p>
-                                        </div>
-                                    </div>
-                                    <div class="mt-2 sm:flex sm:justify-between">
-                                        <div class="sm:flex">
-                                            <p class="text-sm text-gray-500 truncate max-w-sm" x-text="stock.genotype"></p>
-                                        </div>
-                                        <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                                            <p x-text="stock.location || 'No location'"></p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
+            <!-- Middle Row: Activity Feed + Request Stats -->
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
+                <!-- Activity Feed -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Recent Activity</h2>
+                    <template x-if="data.activity.length === 0">
+                        <p class="text-sm text-gray-500">No activity yet. <a href="/stocks/wizard" class="text-primary-600 hover:text-primary-500">Add your first stock</a> to get started!</p>
                     </template>
-                </ul>
+                    <template x-if="data.activity.length > 0">
+                        <div class="flow-root">
+                            <ul class="-mb-4">
+                                <template x-for="(item, idx) in data.activity" :key="idx">
+                                    <li class="pb-4">
+                                        <div class="flex space-x-3">
+                                            <div class="flex-shrink-0">
+                                                <!-- Event type icon -->
+                                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full"
+                                                      :class="{
+                                                          'bg-green-100': item.event_type === 'stock_created',
+                                                          'bg-blue-100': item.event_type === 'stock_flipped',
+                                                          'bg-purple-100': item.event_type === 'cross_created',
+                                                          'bg-emerald-100': item.event_type === 'cross_completed',
+                                                          'bg-red-100': item.event_type === 'cross_failed'
+                                                      }">
+                                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                         :class="{
+                                                             'text-green-600': item.event_type === 'stock_created',
+                                                             'text-blue-600': item.event_type === 'stock_flipped',
+                                                             'text-purple-600': item.event_type === 'cross_created',
+                                                             'text-emerald-600': item.event_type === 'cross_completed',
+                                                             'text-red-600': item.event_type === 'cross_failed'
+                                                         }">
+                                                        <template x-if="item.event_type === 'stock_created'">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                        </template>
+                                                        <template x-if="item.event_type === 'stock_flipped'">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                        </template>
+                                                        <template x-if="item.event_type === 'cross_created'">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                        </template>
+                                                        <template x-if="item.event_type === 'cross_completed'">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </template>
+                                                        <template x-if="item.event_type === 'cross_failed'">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </template>
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm text-gray-900" x-text="item.description"></p>
+                                                <p class="text-xs text-gray-500 mt-0.5">
+                                                    <span x-text="item.user_name || 'System'"></span>
+                                                    &middot;
+                                                    <span x-text="timeAgo(item.timestamp)"></span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Stock Requests Summary -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Stock Requests</h2>
+                    <dl class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <dt class="text-xs font-medium text-gray-500 uppercase">Pending Incoming</dt>
+                            <dd class="mt-1 text-2xl font-semibold text-gray-900" x-text="data.request_stats.pending_incoming"></dd>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <dt class="text-xs font-medium text-gray-500 uppercase">Pending Outgoing</dt>
+                            <dd class="mt-1 text-2xl font-semibold text-gray-900" x-text="data.request_stats.pending_outgoing"></dd>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <dt class="text-xs font-medium text-gray-500 uppercase">Approved</dt>
+                            <dd class="mt-1 text-2xl font-semibold text-gray-900" x-text="data.request_stats.approved_outgoing"></dd>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <dt class="text-xs font-medium text-gray-500 uppercase">Fulfilled</dt>
+                            <dd class="mt-1 text-2xl font-semibold text-gray-900" x-text="data.request_stats.fulfilled_total"></dd>
+                        </div>
+                    </dl>
+                    <div class="mt-4 flex gap-3">
+                        <a href="/admin/requests" class="text-sm font-medium text-primary-600 hover:text-primary-500">Review incoming</a>
+                        <a href="/exchange/requests" class="text-sm font-medium text-primary-600 hover:text-primary-500">My requests</a>
+                    </div>
+                </div>
             </div>
-        </template>
-    </div>
+
+            <!-- Charts Row -->
+            <template x-if="hasChartData()">
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <h3 class="text-sm font-medium text-gray-900 mb-3">Stocks Added</h3>
+                        <canvas x-ref="stocksChart" height="200"></canvas>
+                    </div>
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <h3 class="text-sm font-medium text-gray-900 mb-3">Flip Compliance</h3>
+                        <canvas x-ref="flipChart" height="200"></canvas>
+                    </div>
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <h3 class="text-sm font-medium text-gray-900 mb-3">Cross Outcomes</h3>
+                        <canvas x-ref="crossChart" height="200"></canvas>
+                    </div>
+                </div>
+            </template>
+            <template x-if="!hasChartData()">
+                <div class="mb-6 bg-white shadow rounded-lg p-6 text-center">
+                    <p class="text-sm text-gray-500">Charts will appear once you have some history.</p>
+                </div>
+            </template>
+
+            <!-- Quick Actions -->
+            <div>
+                <h2 class="text-lg font-medium text-gray-900">Quick Actions</h2>
+                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <a href="/stocks/wizard" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span class="mt-2 block text-sm font-semibold text-gray-900">Add New Stock</span>
+                    </a>
+                    <a href="/crosses/new" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span class="mt-2 block text-sm font-semibold text-gray-900">Plan a Cross</span>
+                    </a>
+                    <a href="/stocks/import" class="relative block rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span class="mt-2 block text-sm font-semibold text-gray-900">Import Stocks</span>
+                    </a>
+                    <template x-if="data.flip_alerts.length > 0">
+                        <a href="/stocks?needs_flip=true" class="relative block rounded-lg border-2 border-dashed border-amber-400 bg-amber-50 p-6 text-center hover:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                            <svg class="mx-auto h-12 w-12 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            <span class="mt-2 block text-sm font-semibold text-amber-900">Review Overdue Flips</span>
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 
 <script>
-function recentStocks() {
+function dashboard() {
     return {
         loading: true,
-        stocks: [],
-        async loadStocks() {
+        data: null,
+        charts: [],
+
+        async loadDashboard() {
             this.loading = true;
             try {
-                const response = await fetch('/api/stocks?page_size=5', {
-                    credentials: 'include'
-                });
+                const response = await fetch('/api/dashboard', { credentials: 'include' });
                 if (response.ok) {
-                    const data = await response.json();
-                    this.stocks = data.items || [];
+                    this.data = await response.json();
+                    this.$nextTick(() => this.renderCharts());
+                } else {
+                    console.error('Dashboard API error:', response.status);
+                    // Provide empty defaults so the UI still renders
+                    this.data = {
+                        stats: { total_stocks: 0, active_crosses: 0, total_tags: 0, recent_stocks_7d: 0 },
+                        flip_alerts: [],
+                        cross_reminders: [],
+                        request_stats: { pending_incoming: 0, pending_outgoing: 0, approved_outgoing: 0, fulfilled_total: 0 },
+                        activity: [],
+                        charts: { stocks_per_month: [], flip_compliance: [], cross_outcomes: [] }
+                    };
                 }
             } catch (error) {
-                console.error('Error loading recent stocks:', error);
+                console.error('Error loading dashboard:', error);
+                this.data = {
+                    stats: { total_stocks: 0, active_crosses: 0, total_tags: 0, recent_stocks_7d: 0 },
+                    flip_alerts: [],
+                    cross_reminders: [],
+                    request_stats: { pending_incoming: 0, pending_outgoing: 0, approved_outgoing: 0, fulfilled_total: 0 },
+                    activity: [],
+                    charts: { stocks_per_month: [], flip_compliance: [], cross_outcomes: [] }
+                };
             } finally {
                 this.loading = false;
             }
+        },
+
+        hasChartData() {
+            if (!this.data) return false;
+            const c = this.data.charts;
+            return c.stocks_per_month.some(m => m.count > 0) ||
+                   c.flip_compliance.some(m => m.on_time > 0 || m.overdue > 0) ||
+                   c.cross_outcomes.some(m => m.completed > 0 || m.failed > 0);
+        },
+
+        renderCharts() {
+            if (!this.hasChartData() || typeof Chart === 'undefined') return;
+
+            // Destroy previous chart instances
+            this.charts.forEach(c => c.destroy());
+            this.charts = [];
+
+            const chartDefaults = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { grid: { display: false } }
+                }
+            };
+
+            // Stocks Added
+            if (this.$refs.stocksChart) {
+                const spm = this.data.charts.stocks_per_month;
+                this.charts.push(new Chart(this.$refs.stocksChart, {
+                    type: 'bar',
+                    data: {
+                        labels: spm.map(m => m.label),
+                        datasets: [{
+                            data: spm.map(m => m.count),
+                            backgroundColor: '#3b82f6'
+                        }]
+                    },
+                    options: chartDefaults
+                }));
+            }
+
+            // Flip Compliance (stacked)
+            if (this.$refs.flipChart) {
+                const fc = this.data.charts.flip_compliance;
+                this.charts.push(new Chart(this.$refs.flipChart, {
+                    type: 'bar',
+                    data: {
+                        labels: fc.map(m => m.label),
+                        datasets: [
+                            { label: 'On Time', data: fc.map(m => m.on_time), backgroundColor: '#22c55e' },
+                            { label: 'Overdue', data: fc.map(m => m.overdue), backgroundColor: '#ef4444' }
+                        ]
+                    },
+                    options: {
+                        ...chartDefaults,
+                        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 8 } } },
+                        scales: { ...chartDefaults.scales, x: { ...chartDefaults.scales.x, stacked: true }, y: { ...chartDefaults.scales.y, stacked: true } }
+                    }
+                }));
+            }
+
+            // Cross Outcomes (stacked)
+            if (this.$refs.crossChart) {
+                const co = this.data.charts.cross_outcomes;
+                this.charts.push(new Chart(this.$refs.crossChart, {
+                    type: 'bar',
+                    data: {
+                        labels: co.map(m => m.label),
+                        datasets: [
+                            { label: 'Completed', data: co.map(m => m.completed), backgroundColor: '#22c55e' },
+                            { label: 'Failed', data: co.map(m => m.failed), backgroundColor: '#ef4444' }
+                        ]
+                    },
+                    options: {
+                        ...chartDefaults,
+                        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 8 } } },
+                        scales: { ...chartDefaults.scales, x: { ...chartDefaults.scales.x, stacked: true }, y: { ...chartDefaults.scales.y, stacked: true } }
+                    }
+                }));
+            }
+        },
+
+        timeAgo(timestamp) {
+            const now = new Date();
+            const date = new Date(timestamp);
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return minutes + 'm ago';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + 'h ago';
+            const days = Math.floor(hours / 24);
+            if (days < 7) return days + 'd ago';
+            return date.toLocaleDateString();
         }
-    }
+    };
 }
 </script>
 {% endblock %}

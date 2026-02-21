@@ -14,12 +14,17 @@
 - [ ] Visual indicators for cross status (completed, failed, in-progress)
 - **Rationale:** Data already exists in Cross model (parents + offspring). Unique differentiator vs spreadsheets.
 
-### 2. Dashboard Improvements
-- [ ] Stocks needing attention widget (overdue flips, crosses needing action)
-- [ ] Recent lab activity feed (who did what, when)
-- [ ] Quick-action buttons (flip overdue stocks, continue pending crosses)
-- [ ] Simple charts: stocks added over time, flip compliance rate, cross success rate
-- **Rationale:** Current dashboard shows basic stats only. First thing users see daily.
+### ~~2. Dashboard Improvements~~ ✅ DONE
+- [x] Attention banner: overdue flips (critical + warning) and cross reminders
+- [x] Recent lab activity feed (stocks created, flips, crosses — last 14 days)
+- [x] Quick-action buttons (add stock, plan cross, import, review overdue flips)
+- [x] Stats cards: total stocks, active crosses, tags, new this week (fixed broken "Recent Updates")
+- [x] Chart.js charts: stocks added/month, flip compliance, cross outcomes (last 6 months)
+- [x] Stock request summary (pending incoming/outgoing, approved, fulfilled)
+- [x] Single `GET /api/dashboard` endpoint aggregating all data
+- [x] New `app/dashboard/` module (schemas, service, router)
+- [x] 14 tests in `tests/test_dashboard/` — tenant isolation, auth, stats, alerts, charts
+- **Completed:** 2026-02-21
 
 ### ~~3. Complete Import Conflict Resolution (Phases 2-6)~~ ✅ DONE
 - [x] `RowConflict` / `ConflictingRow` schemas

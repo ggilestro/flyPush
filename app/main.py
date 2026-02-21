@@ -175,6 +175,7 @@ templates.env.globals["app_llm_model"] = settings.llm_default_model
 # Import and include routers
 from app.auth.router import router as auth_router
 from app.backup.router import router as backup_router
+from app.dashboard.router import router as dashboard_router
 from app.billing.router import router as billing_router
 from app.collaborators.router import router as collaborators_router
 from app.crosses.router import router as crosses_router
@@ -205,6 +206,7 @@ app.include_router(flips_router, prefix="/api/flips", tags=["flips"])
 app.include_router(backup_router, prefix="/api/admin/backup", tags=["backup"])
 app.include_router(billing_router, prefix="/api/billing", tags=["billing"])
 app.include_router(collaborators_router, prefix="/api/collaborators", tags=["collaborators"])
+app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 
 
 def get_current_user_from_cookie(
@@ -257,41 +259,12 @@ async def home(
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
-    # Get dashboard stats
-    from app.db.models import Cross, CrossStatus, Stock, Tag
-
-    stats = {
-        "total_stocks": db.query(Stock)
-        .filter(
-            Stock.tenant_id == current_user.tenant_id,
-            Stock.is_active,
-        )
-        .count(),
-        "active_crosses": db.query(Cross)
-        .filter(
-            Cross.tenant_id == current_user.tenant_id,
-            Cross.status.in_([CrossStatus.PLANNED, CrossStatus.IN_PROGRESS]),
-        )
-        .count(),
-        "total_tags": db.query(Tag)
-        .filter(
-            Tag.tenant_id == current_user.tenant_id,
-        )
-        .count(),
-        "recent_updates": db.query(Stock)
-        .filter(
-            Stock.tenant_id == current_user.tenant_id,
-        )
-        .count(),  # Simplified for now
-    }
-
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
             "title": "Dashboard",
             "current_user": current_user,
-            "stats": stats,
         },
     )
 
