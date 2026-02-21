@@ -285,15 +285,15 @@
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
                     <div class="bg-white shadow rounded-lg p-6">
                         <h3 class="text-sm font-medium text-gray-900 mb-3">Stocks Added</h3>
-                        <canvas x-ref="stocksChart" height="200"></canvas>
+                        <div style="position: relative; height: 200px;"><canvas x-ref="stocksChart"></canvas></div>
                     </div>
                     <div class="bg-white shadow rounded-lg p-6">
                         <h3 class="text-sm font-medium text-gray-900 mb-3">Flip Compliance</h3>
-                        <canvas x-ref="flipChart" height="200"></canvas>
+                        <div style="position: relative; height: 200px;"><canvas x-ref="flipChart"></canvas></div>
                     </div>
                     <div class="bg-white shadow rounded-lg p-6">
                         <h3 class="text-sm font-medium text-gray-900 mb-3">Cross Outcomes</h3>
-                        <canvas x-ref="crossChart" height="200"></canvas>
+                        <div style="position: relative; height: 200px;"><canvas x-ref="crossChart"></canvas></div>
                     </div>
                 </div>
             </template>
