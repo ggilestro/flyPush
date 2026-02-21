@@ -73,9 +73,7 @@ class DashboardService:
         )
 
         total_tags = (
-            self.db.query(func.count(Tag.id))
-            .filter(Tag.tenant_id == self.tenant_id)
-            .scalar()
+            self.db.query(func.count(Tag.id)).filter(Tag.tenant_id == self.tenant_id).scalar()
         )
 
         recent_stocks_7d = (
@@ -334,9 +332,7 @@ class DashboardService:
         stock_ids = list(stock_flip_dates.keys())
         stocks_created = {
             s.id: s.created_at
-            for s in self.db.query(Stock.id, Stock.created_at)
-            .filter(Stock.id.in_(stock_ids))
-            .all()
+            for s in self.db.query(Stock.id, Stock.created_at).filter(Stock.id.in_(stock_ids)).all()
         }
 
         # Classify each flip event
@@ -381,12 +377,10 @@ class DashboardService:
             self.db.query(
                 extract("year", Cross.created_at).label("y"),
                 extract("month", Cross.created_at).label("m"),
-                func.sum(
-                    case((Cross.status == CrossStatus.COMPLETED, 1), else_=0)
-                ).label("completed"),
-                func.sum(
-                    case((Cross.status == CrossStatus.FAILED, 1), else_=0)
-                ).label("failed"),
+                func.sum(case((Cross.status == CrossStatus.COMPLETED, 1), else_=0)).label(
+                    "completed"
+                ),
+                func.sum(case((Cross.status == CrossStatus.FAILED, 1), else_=0)).label("failed"),
             )
             .filter(
                 Cross.tenant_id == self.tenant_id,
@@ -397,9 +391,7 @@ class DashboardService:
             .all()
         )
 
-        data = {
-            (int(r.y), int(r.m)): (int(r.completed), int(r.failed)) for r in rows
-        }
+        data = {(int(r.y), int(r.m)): (int(r.completed), int(r.failed)) for r in rows}
         return [
             CrossOutcomeMonth(
                 month=f"{y:04d}-{m:02d}",
@@ -407,9 +399,7 @@ class DashboardService:
                 completed=data.get((y, m), (0, 0))[0],
                 failed=data.get((y, m), (0, 0))[1],
                 success_pct=round(
-                    data.get((y, m), (0, 0))[0]
-                    / max(sum(data.get((y, m), (0, 0))), 1)
-                    * 100,
+                    data.get((y, m), (0, 0))[0] / max(sum(data.get((y, m), (0, 0))), 1) * 100,
                     1,
                 ),
             )
@@ -417,9 +407,7 @@ class DashboardService:
         ]
 
 
-def get_dashboard_service(
-    db: Session, tenant_id: str, user_id: str
-) -> DashboardService:
+def get_dashboard_service(db: Session, tenant_id: str, user_id: str) -> DashboardService:
     """Factory function for DashboardService.
 
     Args:

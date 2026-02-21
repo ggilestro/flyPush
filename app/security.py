@@ -32,6 +32,11 @@ class RateLimiter:
         cutoff = now - self.window_seconds
         self._requests[key] = [t for t in self._requests[key] if t > cutoff]
 
+    def reset(self) -> None:
+        """Clear all tracked requests. Used in tests to avoid cross-test pollution."""
+        with self._lock:
+            self._requests.clear()
+
     def check(self, request: Request) -> None:
         """Check rate limit for the request. Raises HTTP 429 if exceeded."""
         key = self._get_client_ip(request)

@@ -38,6 +38,15 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiters():
+    """Reset rate limiters before each test to prevent cross-test 429 errors."""
+    from app.security import auth_limiter, strict_limiter
+
+    auth_limiter.reset()
+    strict_limiter.reset()
+
+
 @pytest.fixture(scope="function")
 def db() -> Generator[Session, None, None]:
     """Create a fresh database for each test."""

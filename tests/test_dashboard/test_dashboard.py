@@ -119,13 +119,18 @@ class TestDashboardStats:
         assert response.status_code == 200
         assert response.json()["stats"]["total_stocks"] == 2
 
-    def test_recent_stocks_7d_only_counts_last_week(self, authenticated_client, db, test_tenant, test_user):
+    def test_recent_stocks_7d_only_counts_last_week(
+        self, authenticated_client, db, test_tenant, test_user
+    ):
         """recent_stocks_7d should only count stocks created in the last 7 days."""
         # Recent stock
         _make_stock(db, test_tenant.id, test_user.id, "BL-001")
         # Old stock (30 days ago)
         _make_stock(
-            db, test_tenant.id, test_user.id, "BL-002",
+            db,
+            test_tenant.id,
+            test_user.id,
+            "BL-002",
             created_at=datetime.utcnow() - timedelta(days=30),
         )
 
@@ -164,7 +169,10 @@ class TestDashboardFlipAlerts:
     def test_flip_alerts_for_old_stocks(self, authenticated_client, db, test_tenant, test_user):
         """Stocks past the critical flip threshold should appear as alerts."""
         stock = _make_stock(
-            db, test_tenant.id, test_user.id, "BL-OLD",
+            db,
+            test_tenant.id,
+            test_user.id,
+            "BL-OLD",
             created_at=datetime.utcnow() - timedelta(days=60),
         )
         # Add a flip from 40 days ago (past default 31-day critical)
@@ -188,15 +196,20 @@ class TestDashboardFlipAlerts:
         """Flip alerts should be capped at 10."""
         for i in range(15):
             stock = _make_stock(
-                db, test_tenant.id, test_user.id, f"BL-{i:03d}",
+                db,
+                test_tenant.id,
+                test_user.id,
+                f"BL-{i:03d}",
                 created_at=datetime.utcnow() - timedelta(days=60),
             )
             # Add old flip to make it critical
-            db.add(FlipEvent(
-                id=str(uuid4()),
-                stock_id=stock.id,
-                flipped_at=datetime.utcnow() - timedelta(days=40),
-            ))
+            db.add(
+                FlipEvent(
+                    id=str(uuid4()),
+                    stock_id=stock.id,
+                    flipped_at=datetime.utcnow() - timedelta(days=40),
+                )
+            )
         db.commit()
 
         response = authenticated_client.get("/api/dashboard")
@@ -207,7 +220,9 @@ class TestDashboardFlipAlerts:
 class TestDashboardActivityFeed:
     """Test activity feed."""
 
-    def test_activity_includes_recent_stocks(self, authenticated_client, db, test_tenant, test_user):
+    def test_activity_includes_recent_stocks(
+        self, authenticated_client, db, test_tenant, test_user
+    ):
         """Activity feed should include recently created stocks."""
         _make_stock(db, test_tenant.id, test_user.id, "BL-NEW")
 
@@ -217,10 +232,15 @@ class TestDashboardActivityFeed:
         assert any(a["event_type"] == "stock_created" for a in activity)
         assert any("BL-NEW" in a["description"] for a in activity)
 
-    def test_activity_sorted_by_timestamp_desc(self, authenticated_client, db, test_tenant, test_user):
+    def test_activity_sorted_by_timestamp_desc(
+        self, authenticated_client, db, test_tenant, test_user
+    ):
         """Activity feed should be sorted newest first."""
         _make_stock(
-            db, test_tenant.id, test_user.id, "BL-OLD",
+            db,
+            test_tenant.id,
+            test_user.id,
+            "BL-OLD",
             created_at=datetime.utcnow() - timedelta(days=5),
         )
         _make_stock(db, test_tenant.id, test_user.id, "BL-NEW")
